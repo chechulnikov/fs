@@ -2,7 +2,7 @@
 
 namespace Vfs
 {
-    public class Class1
+    public class Superblock
     {
     }
 }
