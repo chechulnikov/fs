@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Vfs.Initialization;
 using Vfs.Mounting;
 
@@ -9,7 +10,7 @@ namespace Vfs
     public class FileSystemManager
     {
         private static readonly object _lock;
-        private static readonly FileSystemManager _instance;
+        private static readonly FileSystemManager Instance;
         private readonly ConcurrentDictionary<string, IFileSystem> _mountedFileSystems;
         private readonly Mounter _mounter;
         private readonly Initializer _initializer;
@@ -18,9 +19,9 @@ namespace Vfs
         {
             _lock = new object();
             
-            if (_instance != null) return;
+            if (Instance != null) return;
             lock (_lock)
-                if (_instance == null) _instance = new FileSystemManager();
+                if (Instance == null) Instance = new FileSystemManager();
         }
 
         private FileSystemManager()
@@ -30,30 +31,29 @@ namespace Vfs
             _initializer = new Initializer();
         }
 
-        public static IReadOnlyDictionary<string, IFileSystem> MountedFileSystems => _instance._mountedFileSystems;
+        public static IReadOnlyDictionary<string, IFileSystem> MountedFileSystems => Instance._mountedFileSystems;
 
-        public static void Init(string deviceFilePath)
+        public static Task Init(FileSystemSettings settings)
         {
-            if (string.IsNullOrWhiteSpace(deviceFilePath))
-                throw new ArgumentException("Device file path cannot be null or whitespace");
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
             
-            _instance._initializer.Initialize(deviceFilePath);
+            return Instance._initializer.Initialize(settings);
         }
 
-        public static IFileSystem Mount(string deviceFilePath)
+        public static IFileSystem Mount(string volumePath)
         {
-            if (string.IsNullOrWhiteSpace(deviceFilePath))
-                throw new ArgumentException("Device file path  cannot be null or whitespace");
-
-            return _instance._mountedFileSystems.GetOrAdd(deviceFilePath, dfp => _instance._mounter.Mount(dfp));
+            if (string.IsNullOrWhiteSpace(volumePath))
+                throw new ArgumentException("Volume path cannot be null or whitespace");
+            
+            return Instance._mountedFileSystems.GetOrAdd(volumePath, dfp => Instance._mounter.Mount(dfp));
         }
 
-        public static void Unmount(string deviceFilePath)
+        public static void Unmount(string volumePath)
         {
-            if (string.IsNullOrWhiteSpace(deviceFilePath))
-                throw new ArgumentException("Device file path  cannot be null or whitespace");
+            if (string.IsNullOrWhiteSpace(volumePath))
+                throw new ArgumentException("Volume path cannot be null or whitespace");
 
-            if (_instance._mountedFileSystems.TryRemove(deviceFilePath, out var fileSystem)) fileSystem.Dispose();
+            if (Instance._mountedFileSystems.TryRemove(volumePath, out var fileSystem)) fileSystem.Dispose();
         }
     }
 }

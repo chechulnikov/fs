@@ -1,4 +1,6 @@
 using System;
+using System.Threading.Tasks;
+using Vfs.Initialization;
 using Xunit;
 
 namespace Vfs.Tests
@@ -9,27 +11,31 @@ namespace Vfs.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("      ")]
-        public void Init_DeviceFileNameIsNull_ArgumentException(string deviceFileName)
+        public Task Init_VolumePathIsInvalid_ArgumentException(string volumePath)
         {
-            Assert.Throws<ArgumentException>(() => FileSystemManager.Init(deviceFileName));
+            // Arrange
+            var settings = new FileSystemSettings {VolumePath = volumePath};
+            
+            // Assert
+            return Assert.ThrowsAsync<FileSystemInitException>(() => FileSystemManager.Init(settings));
         }
         
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("      ")]
-        public void Mount_DeviceFileNameIsNull_ArgumentException(string deviceFileName)
+        public void Mount_VolumePathIsInvalid_ArgumentException(string volumePath)
         {
-            Assert.Throws<ArgumentException>(() => FileSystemManager.Mount(deviceFileName));
+            Assert.Throws<ArgumentException>(() => FileSystemManager.Mount(volumePath));
         }
         
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("      ")]
-        public void Unmount_DeviceFileNameIsNull_ArgumentException(string deviceFileName)
+        public void Unmount_VolumePathIsInvalid_ArgumentException(string volumePath)
         {
-            Assert.Throws<ArgumentException>(() => FileSystemManager.Unmount(deviceFileName));
+            Assert.Throws<ArgumentException>(() => FileSystemManager.Unmount(volumePath));
         }
         
         [Fact]

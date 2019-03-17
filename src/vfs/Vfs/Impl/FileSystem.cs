@@ -4,11 +4,14 @@ namespace Vfs
     {
         public FileSystem(string deviceFilePath)
         {
-            DeviceFilePath = deviceFilePath;
+            VolumePath = deviceFilePath;
         }
         
-        public string DeviceFilePath { get; }
-        
+        public string VolumePath { get; }
+        public ulong VolumeSize { get; }
+        public ulong UsedSpace { get; }
+        public ulong UnusedSpace { get; }
+
         public IDirectory Root { get; }
         
         public void CreateFile(string path)
