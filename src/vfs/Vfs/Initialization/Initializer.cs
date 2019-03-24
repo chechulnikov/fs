@@ -8,10 +8,12 @@ namespace Vfs.Initialization
     {
         private const ushort MinAllocationGroupBlocksCount = 8197;
         
-        public Task Initialize(FileSystemSettings settings)
+        public ValueTask Initialize(FileSystemSettings settings)
         {
             ValidateSettings(settings);
-            return CreateVolume(settings);
+            
+            var superblock = CreateSuperblock(settings);
+            return CreateVolume(settings, superblock);
         }
 
         private static void ValidateSettings(FileSystemSettings settings)
@@ -36,19 +38,21 @@ namespace Vfs.Initialization
                     $"Allocation group size cannot be less than {MinAllocationGroupBlocksCount} blocks");
         }
 
-        private static Task CreateVolume(FileSystemSettings settings)
+        private static Superblock CreateSuperblock(FileSystemSettings settings) => new Superblock
         {
-            var superblock = new Superblock
-            {
-                BlockSize = settings.BlockSize,
-                BlocksCount = (uint) settings.BlocksCountPerAllocationGroup + 1,
-                UsedBlocksCount = 1, // TODO учитывать битмапы?
-                INodeSize = 1,
-                BlocksCountPerAllocationGroup = settings.BlocksCountPerAllocationGroup,
-                AllocationGroupsCount = 1
-            };
-            var volumeData = superblock.Serialize().ToArray();
-            return File.WriteAllBytesAsync(settings.VolumePath, volumeData);
+            BlockSize = settings.BlockSize,
+            BlocksCount = settings.BlocksCountPerAllocationGroup + 1,
+            UsedBlocksCount = 1, // TODO учитывать битмапы?
+            INodeSize = 1,
+            BlocksCountPerAllocationGroup = settings.BlocksCountPerAllocationGroup,
+            AllocationGroupsCount = 1
+        };
+
+        private static ValueTask CreateVolume(FileSystemSettings settings, Superblock superblock)
+        {
+            var volume = new Volume(settings.VolumePath, settings.BlockSize);
+            var superblockData = superblock.Serialize().ToArray();
+            return volume.WriteBlocks(superblockData, 0);
         }
     }
 }

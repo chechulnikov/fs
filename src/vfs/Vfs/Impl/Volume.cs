@@ -6,26 +6,33 @@ namespace Vfs
 {
     internal class Volume : IDisposable
     {
-        private readonly ushort _blockSize;
+        private readonly int _blockSize;
         private readonly FileStream _stream;
 
-        public Volume(string volumePath, ushort blockSize)
+        public Volume(string volumePath, int blockSize)
         {
             _blockSize = blockSize;
-            _stream = new FileStream(volumePath, FileMode.Open);
+            
+            var fileMode = File.Exists(volumePath) ? FileMode.Open : FileMode.CreateNew;
+            _stream = new FileStream(volumePath, fileMode);
         }
 
         public async ValueTask<ReadOnlyMemory<byte>> ReadBlocks(int start, int blocksCount)
         {
-            var buffer = new byte[blocksCount * _blockSize];
+            var buffer = new byte[blocksCount * _blockSize]; // TODO byte[] pool?
             await _stream.ReadAsync(buffer, start, blocksCount);
             return buffer;
         }
 
-        public void FlushData(ReadOnlyMemory<byte> data)
+        public async ValueTask WriteBlocks(byte[] data, int offset)
         {
-            var wholeBloks = data.Length / _blockSize;
-            _stream.WriteAsync(data);
+            if (data.Length % _blockSize != 0)
+            {
+                throw new FileSystemException("Invalid data size");
+            }
+            
+            var blocksCount = data.Length / _blockSize;
+            await _stream.WriteAsync(data, offset, blocksCount);
         }
 
         public void Dispose()

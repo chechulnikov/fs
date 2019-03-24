@@ -8,7 +8,7 @@ namespace Vfs
 
         byte[] Read(ulong start, ulong length);
        
-        void Write(byte[] data);
-        void Write(ulong start, byte[] data);
+        void Append(byte[] data);
+        void Write(ulong offset, byte[] data);
     }
 }

@@ -13,10 +13,6 @@ namespace Vfs
         void DeleteFile(string path);
         IFile OpenFile(string path);
         
-        void CreateDirectory(string path);
-        void DeleteDirectory(string path);
-        IDirectory OpenDirectory(string path);
-        
         IDirectory Root { get; }
     }
 }

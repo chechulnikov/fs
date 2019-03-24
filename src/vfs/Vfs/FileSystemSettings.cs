@@ -6,9 +6,9 @@ namespace Vfs
     {   
         public string VolumePath { get; set; }
 
-        public ushort BlocksCountPerAllocationGroup { get; set; } = 8197;
+        public int BlocksCountPerAllocationGroup { get; set; } = Default.BlocksCountPerAllocationGroup;
         
         // 1024, 2048, 4096 or 8192 bytes only
-        public ushort BlockSize { get; set; } = (ushort) 1.KiB();
+        public int BlockSize { get; set; } = Default.BlockSize;
     }
 }

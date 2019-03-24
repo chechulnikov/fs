@@ -2,9 +2,14 @@ namespace Vfs
 {
     internal class FileSystem : IFileSystem
     {
-        public FileSystem(string deviceFilePath)
+        private readonly Volume _volume;
+        private readonly Superblock _superblock;
+
+        public FileSystem(string volumePath, Volume volume, Superblock superblock)
         {
-            VolumePath = deviceFilePath;
+            VolumePath = volumePath;
+            _volume = volume;
+            _superblock = superblock;
         }
         
         public string VolumePath { get; }
@@ -25,21 +30,6 @@ namespace Vfs
         }
 
         public IFile OpenFile(string path)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void CreateDirectory(string path)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void DeleteDirectory(string path)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public IDirectory OpenDirectory(string path)
         {
             throw new System.NotImplementedException();
         }

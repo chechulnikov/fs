@@ -36,7 +36,7 @@ namespace Vfs.Tests
             Assert.Equal(settings.BlocksCountPerAllocationGroup, superblock.BlocksCountPerAllocationGroup);
         }
 
-        private async Task<Superblock> ReadSuperblock(ushort blockSize)
+        private async Task<Superblock> ReadSuperblock(int blockSize)
         {
             var bytes = new byte[blockSize];
             
