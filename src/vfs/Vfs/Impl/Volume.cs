@@ -35,9 +35,6 @@ namespace Vfs
             await _stream.WriteAsync(data, offset, blocksCount);
         }
 
-        public void Dispose()
-        {
-            _stream?.Dispose();
-        }
+        public void Dispose() => _stream?.Dispose();
     }
 }

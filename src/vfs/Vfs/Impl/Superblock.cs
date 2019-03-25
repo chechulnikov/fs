@@ -3,7 +3,7 @@
 namespace Vfs
 {
     [Serializable]
-    public class Superblock
+    public class Superblock : IFileSystemMeta
     {
         public int MagicNumber { get; set; }
         

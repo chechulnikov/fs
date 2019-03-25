@@ -40,6 +40,7 @@ namespace Vfs.Initialization
 
         private static Superblock CreateSuperblock(FileSystemSettings settings) => new Superblock
         {
+            MagicNumber = MagicConstant.SuperblockMagicNumber,
             BlockSize = settings.BlockSize,
             BlocksCount = settings.BlocksCountPerAllocationGroup + 1,
             UsedBlocksCount = 1, // TODO учитывать битмапы?

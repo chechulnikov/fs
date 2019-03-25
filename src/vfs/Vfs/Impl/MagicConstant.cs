@@ -2,6 +2,6 @@ namespace Vfs
 {
     internal static class MagicConstant
     {
-        public const uint SuperblockMagicNumber = 4293957595;
+        public const int SuperblockMagicNumber = 2_137_473_947;
     }
 }

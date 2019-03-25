@@ -7,15 +7,13 @@ namespace Vfs.Mounting
 {
     internal class Mounter
     {
-        public async ValueTask<IFileSystem> Mount(string volumePath)
+        public async Task<IFileSystem> Mount(string volumePath)
         {
             if (!File.Exists(volumePath)) throw new VolumeNotFoundException(volumePath);
             var blockSize = ValidateHeader(volumePath);
             
             var volume = new Volume(volumePath, blockSize);
-            var memory = await volume.ReadBlocks(0, 1);
-
-            var superblock = ParseSuperblock(memory);
+            var superblock = await ReadSuperblock(volume);
             
             return new FileSystem(volumePath, volume, superblock);
         }
@@ -44,9 +42,10 @@ namespace Vfs.Mounting
             return blockSize;
         }
         
-        private static Superblock ParseSuperblock(ReadOnlyMemory<byte> block)
+        private static async Task<Superblock> ReadSuperblock(Volume volume)
         {
-            using (var ms = new MemoryStream(block.ToArray()))
+            var memory = await volume.ReadBlocks(0, 1);
+            using (var ms = new MemoryStream(memory.ToArray()))
                 return (Superblock) new BinaryFormatter().Deserialize(ms);
         }
     }

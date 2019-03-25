@@ -37,7 +37,7 @@ namespace Vfs
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             
-            return Task.FromResult(Initializer.Initialize(settings));
+            return Task.FromResult(_instance._initializer.Initialize(settings));
         }
 
         // TODO to async
