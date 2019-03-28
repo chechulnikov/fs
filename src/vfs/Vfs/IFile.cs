@@ -1,14 +1,18 @@
+using System;
+using System.Threading.Tasks;
+
 namespace Vfs
 {
     public interface IFile
     {
-        string Path { get; set; }
-        string Name { get; set; }
-        ulong Size { get; }
+        Guid Id { get; }
+        
+        string Name { get; }
+        
+        int Size { get; }
 
-        byte[] Read(ulong start, ulong length);
+        Task<byte[]> Read(int offset, int length);
        
-        void Append(byte[] data);
-        void Write(ulong offset, byte[] data);
+        void Write(int offset, byte[] data);
     }
 }

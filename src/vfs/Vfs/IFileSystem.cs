@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace Vfs
 {
@@ -9,7 +10,7 @@ namespace Vfs
         ulong UsedSpace { get; }
         ulong UnusedSpace { get; }
 
-        void CreateFile(string path);
+        Task<IFile> CreateFile(string path);
         void DeleteFile(string path);
         IFile OpenFile(string path);
         

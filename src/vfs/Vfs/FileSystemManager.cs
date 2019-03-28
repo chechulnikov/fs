@@ -40,7 +40,7 @@ namespace Vfs
             return Task.FromResult(_instance._initializer.Initialize(settings));
         }
 
-        // TODO to async
+        // TODO to async?
         public static IFileSystem Mount(string volumePath)
         {
             if (string.IsNullOrWhiteSpace(volumePath))

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Vfs.Utils;
 
@@ -18,7 +19,7 @@ namespace Vfs.Initialization
 
         private static void ValidateSettings(FileSystemSettings settings)
         {
-            if (string.IsNullOrWhiteSpace(settings.VolumePath) || File.Exists(settings.VolumePath))
+            if (string.IsNullOrWhiteSpace(settings.VolumePath) || System.IO.File.Exists(settings.VolumePath))
                 throw new FileSystemInitException($"Volume \"{settings.VolumePath}\" cannot be created");
 
             switch (settings.BlockSize)
@@ -40,11 +41,11 @@ namespace Vfs.Initialization
 
         private static Superblock CreateSuperblock(FileSystemSettings settings) => new Superblock
         {
-            MagicNumber = MagicConstant.SuperblockMagicNumber,
+            MagicNumber = GlobalConstant.SuperblockMagicNumber,
             BlockSize = settings.BlockSize,
             BlocksCount = settings.BlocksCountPerAllocationGroup + 1,
             UsedBlocksCount = 1, // TODO учитывать битмапы?
-            INodeSize = 1,
+            InodeSize = 1,
             BlocksCountPerAllocationGroup = settings.BlocksCountPerAllocationGroup,
             AllocationGroupsCount = 1
         };
@@ -53,7 +54,7 @@ namespace Vfs.Initialization
         {
             var volume = new Volume(settings.VolumePath, settings.BlockSize);
             var superblockData = superblock.Serialize().ToArray();
-            return volume.WriteBlocks(superblockData, 0);
+            return volume.WriteBlocks(superblockData, Enumerable.Range(0, 1).ToArray());
         }
     }
 }

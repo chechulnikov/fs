@@ -1,28 +1,30 @@
+using System.Threading.Tasks;
+
 namespace Vfs
 {
     internal class FileSystem : IFileSystem
     {
-        private readonly Volume _volume;
-        private readonly Superblock _superblock;
+        private readonly IFileSystemMeta _fileSystemMeta;
+        private readonly FileCreator _fileCreator;
 
-        public FileSystem(string volumePath, Volume volume, Superblock superblock)
+        public FileSystem(string volumePath, IFileSystemMeta fileSystemMeta, FileCreator fileCreator)
         {
             VolumePath = volumePath;
-            _volume = volume;
-            _superblock = superblock;
+            _fileSystemMeta = fileSystemMeta;
+            _fileCreator = fileCreator;
         }
         
         public string VolumePath { get; }
-        public ulong VolumeSize { get; }
-        public ulong UsedSpace { get; }
-        public ulong UnusedSpace { get; }
+
+        public ulong VolumeSize => (ulong) (_fileSystemMeta.BlockSize * _fileSystemMeta.BlocksCount);
+        
+        public ulong UsedSpace => (ulong) (_fileSystemMeta.BlockSize * _fileSystemMeta.UsedBlocksCount);
+
+        public ulong UnusedSpace => VolumeSize - UsedSpace;
 
         public IDirectory Root { get; }
         
-        public void CreateFile(string path)
-        {
-            throw new System.NotImplementedException();
-        }
+        public Task<IFile> CreateFile(string fileName) => _fileCreator.CreateFile(fileName);
 
         public void DeleteFile(string path)
         {
