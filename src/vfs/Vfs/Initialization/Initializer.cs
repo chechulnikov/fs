@@ -7,8 +7,6 @@ namespace Vfs.Initialization
 {
     internal class Initializer
     {
-        private const ushort MinAllocationGroupBlocksCount = 8197;
-        
         public ValueTask Initialize(FileSystemSettings settings)
         {
             ValidateSettings(settings);
@@ -33,21 +31,14 @@ namespace Vfs.Initialization
                     throw new FileSystemInitException(
                         $"Invalid block size {settings.BlockSize}. 1024, 2048, 4096, 8197 are only allowed");
             }
-            
-            if (settings.BlocksCountPerAllocationGroup < MinAllocationGroupBlocksCount)
-                throw new FileSystemInitException(
-                    $"Allocation group size cannot be less than {MinAllocationGroupBlocksCount} blocks");
         }
 
         private static Superblock CreateSuperblock(FileSystemSettings settings) => new Superblock
         {
             MagicNumber = GlobalConstant.SuperblockMagicNumber,
             BlockSize = settings.BlockSize,
-            BlocksCount = settings.BlocksCountPerAllocationGroup + 1,
-            UsedBlocksCount = 1, // TODO учитывать битмапы?
-            InodeSize = 1,
-            BlocksCountPerAllocationGroup = settings.BlocksCountPerAllocationGroup,
-            AllocationGroupsCount = 1
+            BlocksCount = settings.BlockSize * sizeof(byte) * GlobalConstant.BitmapBlocksCount,
+            UsedBlocksCount = 1 + GlobalConstant.BitmapBlocksCount
         };
 
         private static ValueTask CreateVolume(FileSystemSettings settings, Superblock superblock)

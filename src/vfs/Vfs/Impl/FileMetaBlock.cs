@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 
 namespace Vfs
 {
     /// <summary>
-    /// File meta block structure
+    /// File meta block structure (aka inode)
     /// </summary>
     internal class FileMetaBlock : IBinarySerializable
     {
@@ -18,9 +19,25 @@ namespace Vfs
         
         public bool InUnderWriting { get; set; }
         
-        public int[] DirectBlocks { get; set; }
+        public IList<int> DirectBlocks { get; }
         
-        public int[] IndirectBlocks { get; set; }
+        public IList<int> IndirectBlocks { get; }
+        
+        public int CalcDataBlocksSizeInBytes(int blockSize)
+        {
+            var directBlocksCount = DirectBlocks.Count;
+            var indirectBlocksCount = IndirectBlocks.Count;
+            var indirectBlockCapacity = blockSize / sizeof(int);
+            return (directBlocksCount + indirectBlocksCount * indirectBlockCapacity) * blockSize;
+        }
+        
+        public int CalcDataBlocksCount(int blockSize)
+        {
+            var directBlocksCount = DirectBlocks.Count;
+            var indirectBlocksCount = IndirectBlocks.Count;
+            var indirectBlockCapacity = blockSize / sizeof(int);
+            return directBlocksCount + indirectBlocksCount * indirectBlockCapacity;
+        }
         
         public byte[] Serialize()
         {

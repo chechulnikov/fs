@@ -33,7 +33,6 @@ namespace Vfs.Tests
             Assert.True(File.Exists(_volumePath));
             var superblock = await ReadSuperblock(settings.BlockSize);
             Assert.Equal(settings.BlockSize, superblock.BlockSize);
-            Assert.Equal(settings.BlocksCountPerAllocationGroup, superblock.BlocksCountPerAllocationGroup);
         }
 
         private async Task<Superblock> ReadSuperblock(int blockSize)

@@ -8,9 +8,9 @@ namespace Vfs
     /// <summary>
     /// This tree provides first unset bit search search for O(log n)
     /// Example:
-    /// 1 1 1 0 1 0 0 1
-    ///  1   0   0   0
     ///    0       0
+    ///  1   0   0   0
+    /// 1 1 1 0 1 0 0 1
     /// </summary>
     internal class BitmapTree : IDisposable
     {
@@ -60,7 +60,7 @@ namespace Vfs
         /// Tries to set given bit
         /// </summary>
         /// <param name="bitNumber">Number of bit</param>
-        /// <returns>True, if bit was successfully installed</returns>
+        /// <returns>True, if bit was successfully set</returns>
         public bool TrySetBit(int bitNumber)
         {
             if (this[bitNumber]) return false;

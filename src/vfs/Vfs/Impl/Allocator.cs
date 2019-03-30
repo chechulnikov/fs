@@ -5,38 +5,51 @@ namespace Vfs
 {
     internal class Allocator
     {
-        private readonly Volume _volume;
         private readonly IFileSystemMeta _fileSystemMeta;
         private readonly BitmapTree _bitmap;
 
         public Allocator(Volume volume, IFileSystemMeta fileSystemMeta)
         {
-            _volume = volume;
             _fileSystemMeta = fileSystemMeta;
 
-            var bitmapBlocks = volume.ReadBlocks(1, fileSystemMeta.BlocksCount).Result;
+            var bitmapBlocks = ReadBitmapBlocks(volume);
             _bitmap = new BitmapTree(bitmapBlocks);
         }
 
         /// <summary>
-        /// Allocates blocks for <param name="data">data byte array</param>
+        /// Allocates bytes in blocks by given bytes count
         /// </summary>
-        /// <param name="data">Data byte array, th at should be allocated</param>
-        /// <returns>Count of allocated bytes</returns>
-        public async ValueTask<int> Allocate(byte[] data)
+        /// <param name="bytesCount">Count of bytes, that should be allocated</param>
+        /// <returns>Allocation result with count of allocated bytes and allocated blocks numbers</returns>
+        public AllocationResult AllocateBytes(int bytesCount)
         {
-            var blocksCount = CalcBlocksCount(data);
-            var blocksNumbers = ReserveBlocks(blocksCount);
+            var blocksCount = CalcBlocksCount(bytesCount);
 
-            await _volume.WriteBlocks(data, blocksNumbers);
-
-            return blocksCount * _fileSystemMeta.BlockSize;
+            return new AllocationResult
+            {
+                BytesAllocated = blocksCount * _fileSystemMeta.BlockSize,
+                ReservedBlocks = ReserveBlocks(blocksCount)
+            };
         }
         
-        private int CalcBlocksCount(IReadOnlyCollection<byte> data)
+        /// <summary>
+        /// Allocates blocks of bytes by given blocks count
+        /// </summary>
+        /// <param name="blocksCount">Count of blocks of bytes, that should be allocated</param>
+        /// <returns>Allocation result with count of allocated bytes and allocated blocks numbers</returns>
+        public AllocationResult AllocateBlocks(int blocksCount)
         {
-            var blocksCount = data.Count / _fileSystemMeta.BlockSize;
-            return data.Count % _fileSystemMeta.BlockSize == 0 ? blocksCount : blocksCount + 1;
+            return new AllocationResult
+            {
+                BytesAllocated = blocksCount * _fileSystemMeta.BlockSize,
+                ReservedBlocks = ReserveBlocks(blocksCount)
+            };
+        }
+        
+        private int CalcBlocksCount(int bytesCount)
+        {
+            var blocksCount = bytesCount / _fileSystemMeta.BlockSize;
+            return bytesCount % _fileSystemMeta.BlockSize == 0 ? blocksCount : blocksCount + 1;
         }
 
         private IReadOnlyList<int> ReserveBlocks(int countOfBlocks)
@@ -51,6 +64,12 @@ namespace Vfs
             }
 
             return blocksNumbers;
+        }
+
+        private byte[] ReadBitmapBlocks(Volume volume)
+        {
+            var bitmapBlocksCount = _fileSystemMeta.BlocksCount / _fileSystemMeta.BlockSize / 8;
+            return volume.ReadBlocks(1, bitmapBlocksCount).Result;
         }
     }
 }

@@ -18,6 +18,8 @@ namespace Vfs
         
         public async ValueTask<Memory<byte>> ReadBlocksToBuffer(Memory<byte> buffer, int startBlockNumber)
         {
+            if (startBlockNumber < 0) throw new ArgumentOutOfRangeException(nameof(startBlockNumber));
+            
             using (var stream = System.IO.File.OpenRead(_volumePath))
             {
                 stream.Seek(startBlockNumber * _blockSize, SeekOrigin.Begin);
@@ -28,6 +30,9 @@ namespace Vfs
 
         public async ValueTask<byte[]> ReadBlocks(int startBlockNumber, int blocksCount)
         {
+            if (startBlockNumber < 0) throw new ArgumentOutOfRangeException(nameof(startBlockNumber));
+            if (blocksCount <= 0) throw new ArgumentOutOfRangeException(nameof(blocksCount));
+
             var buffer = new byte[blocksCount * _blockSize]; // TODO byte[] pool?
             using (var stream = System.IO.File.OpenRead(_volumePath))
             {
@@ -39,6 +44,9 @@ namespace Vfs
         
         public async ValueTask WriteBlocksСontiguously(byte[] data, int startBlockNumber, int blocksCount)
         {
+            if (startBlockNumber < 0) throw new ArgumentOutOfRangeException(nameof(startBlockNumber));
+            if (blocksCount <= 0) throw new ArgumentOutOfRangeException(nameof(blocksCount));
+            
             using (var stream = System.IO.File.OpenWrite(_volumePath))
             {
                 stream.Seek(startBlockNumber * _blockSize, SeekOrigin.Begin);

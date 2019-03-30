@@ -5,27 +5,25 @@ namespace Vfs
     internal class FileCreator
     {
         private readonly FileFactory _fileFactory;
-        private readonly TransactionManager _transactionManager;
         private readonly Allocator _allocator;
+        private readonly Volume _volume;
 
         public FileCreator(
             FileFactory fileFactory,
-            TransactionManager transactionManager,
-            Allocator allocator)
+            Allocator allocator,
+            Volume volume)
         {
             _fileFactory = fileFactory;
-            _transactionManager = transactionManager;
             _allocator = allocator;
+            _volume = volume;
         }
 
         public async Task<IFile> CreateFile(string name)
         {
-            using (_transactionManager.StartTransaction())
-            {
-                var fileMetaBlock = new FileMetaBlock();
-                var bytesCount = await _allocator.Allocate(fileMetaBlock.Serialize());
-                return _fileFactory.NewFile(fileMetaBlock, name, bytesCount);
-            }
+            var fileMetaBlock = new FileMetaBlock();
+            var allocationResult = _allocator.AllocateBlocks(1);
+            await _volume.WriteBlocks(fileMetaBlock.Serialize(), allocationResult.ReservedBlocks);
+            return _fileFactory.NewFile(fileMetaBlock, name, allocationResult.BytesAllocated);
         } 
     }
 }

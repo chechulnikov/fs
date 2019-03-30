@@ -14,13 +14,5 @@ namespace Vfs
         public int BlocksCount { get; set; }
         
         public int UsedBlocksCount { get; set; }
-        
-        public int InodeSize { get; set; }
-        
-        public int BlocksCountPerAllocationGroup { get; set; }
-        
-        public int AllocationGroupsCount { get; set; }
-        
-        public BlockRun RootInode { get; set; }
     }
 }

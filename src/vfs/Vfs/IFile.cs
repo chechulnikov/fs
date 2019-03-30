@@ -13,6 +13,6 @@ namespace Vfs
 
         Task<byte[]> Read(int offset, int length);
        
-        void Write(int offset, byte[] data);
+        Task Write(int offset, byte[] data);
     }
 }

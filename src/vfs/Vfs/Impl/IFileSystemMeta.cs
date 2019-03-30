@@ -7,11 +7,5 @@ namespace Vfs
         int BlocksCount { get; }
         
         int UsedBlocksCount { get; }
-        
-        int InodeSize { get; }
-        
-        int BlocksCountPerAllocationGroup { get; }
-        
-        int AllocationGroupsCount { get; }
     }
 }
