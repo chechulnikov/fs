@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Vfs.Utils
+namespace Jbta.VirtualFileSystem.Utils
 {
     internal class ConcurrentSet<T>
     {

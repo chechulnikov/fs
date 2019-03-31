@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     internal class TransactionManager
     {

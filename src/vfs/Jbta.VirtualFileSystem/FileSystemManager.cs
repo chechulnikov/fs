@@ -1,11 +1,10 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Vfs.Initialization;
-using Vfs.Mounting;
+using Jbta.VirtualFileSystem.Initialization;
+using Jbta.VirtualFileSystem.Mounting;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem
 {
     public class FileSystemManager
     {

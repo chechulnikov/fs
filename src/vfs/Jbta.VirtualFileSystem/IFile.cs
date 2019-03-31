@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem
 {
     public interface IFile
     {

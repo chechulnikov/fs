@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Exceptions;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     internal class Volume
     {

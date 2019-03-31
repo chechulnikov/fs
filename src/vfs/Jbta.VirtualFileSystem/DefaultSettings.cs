@@ -1,9 +1,9 @@
-using Vfs.Utils;
+using Jbta.VirtualFileSystem.Utils;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem
 {
     internal static class DefaultSettings
     {
-        public static int BlockSize = (int) 1.KiB();
+        public static readonly int BlockSize = (int) 1.KiB();
     }
 }

@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 
-namespace Vfs.Utils
+namespace Jbta.VirtualFileSystem.Utils
 {
     internal static class SerializationExtensions
     {

@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Vfs.Utils;
+using Jbta.VirtualFileSystem.Utils;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     internal class FileWriter
     {

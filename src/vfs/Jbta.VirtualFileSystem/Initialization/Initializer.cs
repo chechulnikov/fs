@@ -1,9 +1,9 @@
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Vfs.Utils;
+using Jbta.VirtualFileSystem.Impl;
+using Jbta.VirtualFileSystem.Utils;
 
-namespace Vfs.Initialization
+namespace Jbta.VirtualFileSystem.Initialization
 {
     internal class Initializer
     {

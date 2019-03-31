@@ -1,4 +1,4 @@
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     internal static class FileSystemFactory
     {

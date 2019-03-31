@@ -1,4 +1,4 @@
-namespace Vfs.Allocation
+namespace Jbta.VirtualFileSystem.Allocation
 {
     internal class Allocator
     {

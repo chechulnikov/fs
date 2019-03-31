@@ -1,6 +1,6 @@
 using System;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Exceptions
 {
     public class FileSystemException : Exception
     {

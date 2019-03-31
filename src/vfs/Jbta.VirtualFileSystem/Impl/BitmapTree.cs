@@ -1,9 +1,10 @@
 using System;
 using System.Collections;
 using System.Threading;
-using Vfs.Utils;
+using Jbta.VirtualFileSystem.Exceptions;
+using Jbta.VirtualFileSystem.Utils;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     /// <summary>
     /// This tree provides first unset bit search search for O(log n)

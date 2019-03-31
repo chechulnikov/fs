@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     internal class FileSystem : IFileSystem
     {
@@ -21,8 +21,6 @@ namespace Vfs
         public ulong UsedSpace => (ulong) (_fileSystemMeta.BlockSize * _fileSystemMeta.UsedBlocksCount);
 
         public ulong UnusedSpace => VolumeSize - UsedSpace;
-
-        public IDirectory Root { get; }
         
         public Task<IFile> CreateFile(string fileName) => _fileCreator.CreateFile(fileName);
 

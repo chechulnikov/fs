@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     internal class FileCreator
     {

@@ -1,4 +1,6 @@
-namespace Vfs.Initialization
+using Jbta.VirtualFileSystem.Exceptions;
+
+namespace Jbta.VirtualFileSystem.Initialization
 {
     internal class FileSystemInitException : FileSystemException
     {

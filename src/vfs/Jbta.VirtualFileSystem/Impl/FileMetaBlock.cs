@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     /// <summary>
     /// File meta block structure (aka inode)

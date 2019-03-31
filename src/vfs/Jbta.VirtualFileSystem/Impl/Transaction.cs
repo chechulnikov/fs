@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Generic;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     internal class Transaction : ITransaction
     {

@@ -2,8 +2,10 @@ using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Exceptions;
+using Jbta.VirtualFileSystem.Impl;
 
-namespace Vfs.Mounting
+namespace Jbta.VirtualFileSystem.Mounting
 {
     internal class Mounter
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 
-namespace Vfs.Utils
+namespace Jbta.VirtualFileSystem.Utils
 {
     internal static class ReaderWriterLockSlimExtensions
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     [Serializable]
     public class Superblock : IFileSystemMeta

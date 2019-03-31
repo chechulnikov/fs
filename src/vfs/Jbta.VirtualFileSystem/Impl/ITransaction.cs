@@ -1,6 +1,6 @@
 using System;
 
-namespace Vfs
+namespace Jbta.VirtualFileSystem.Impl
 {
     internal interface ITransaction : IDisposable
     {
