@@ -1,6 +1,8 @@
+using System.Collections;
 using System.Linq;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Impl;
+using Jbta.VirtualFileSystem.Impl.Indexing;
 using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Initialization
@@ -12,7 +14,9 @@ namespace Jbta.VirtualFileSystem.Initialization
             ValidateSettings(settings);
             
             var superblock = CreateSuperblock(settings);
-            return CreateVolume(settings, superblock);
+            var bitmap = CreateBitmap(settings);
+            var rootIndexBlock = CreateRootIndexBlock(settings);
+            return CreateVolume(settings, superblock, bitmap, rootIndexBlock);
         }
 
         private static void ValidateSettings(FileSystemSettings settings)
@@ -41,11 +45,25 @@ namespace Jbta.VirtualFileSystem.Initialization
             UsedBlocksCount = 1 + GlobalConstant.BitmapBlocksCount
         };
 
-        private static ValueTask CreateVolume(FileSystemSettings settings, Superblock superblock)
+        private static BitArray CreateBitmap(FileSystemSettings settings)
+        {
+            var bitArray = new BitArray(8 * settings.BlockSize * GlobalConstant.BitmapBlocksCount);
+            foreach (var i in Enumerable.Range(0, GlobalConstant.BitmapBlocksCount))
+            {
+                bitArray.Set(i, true);
+            }
+            return bitArray;
+        }
+
+        private static IndexBlock CreateRootIndexBlock(FileSystemSettings settings) => new IndexBlock(settings.BlockSize);
+
+        private static async ValueTask CreateVolume(
+            FileSystemSettings settings, Superblock superblock, BitArray bitmap, IBinarySerializable indexBlock)
         {
             var volume = new Volume(settings.VolumePath, settings.BlockSize);
-            var superblockData = superblock.Serialize().ToArray();
-            return volume.WriteBlocks(superblockData, Enumerable.Range(0, 1).ToArray());
+            await volume.WriteBlocks(superblock.Serialize().ToArray(), Enumerable.Range(0, 1).ToArray());
+            await volume.WriteBlocks(bitmap.ToByteArray(), Enumerable.Range(1, GlobalConstant.BitmapBlocksCount).ToArray());
+            await volume.WriteBlocks(indexBlock.Serialize(), Enumerable.Range(GlobalConstant.BitmapBlocksCount,1).ToArray());
         }
     }
 }

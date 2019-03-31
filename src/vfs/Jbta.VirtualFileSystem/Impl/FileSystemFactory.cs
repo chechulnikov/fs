@@ -1,3 +1,5 @@
+using Jbta.VirtualFileSystem.Mounting;
+
 namespace Jbta.VirtualFileSystem.Impl
 {
     internal static class FileSystemFactory
@@ -9,7 +11,8 @@ namespace Jbta.VirtualFileSystem.Impl
             var fileWriter = new FileWriter(fileSystemMeta, allocator, volume);
             var fileFactory = new FileFactory(fileReader, fileWriter);
             var fileCreator = new FileCreator(fileFactory, allocator, volume);
-            return new FileSystem(volumePath, fileSystemMeta, fileCreator);
+            var unmounter = new Unmounter(fileSystemMeta, volume);
+            return new FileSystem(volumePath, fileSystemMeta, fileCreator, unmounter);
         }
     }
 }

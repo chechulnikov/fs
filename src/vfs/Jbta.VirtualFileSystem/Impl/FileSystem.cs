@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Mounting;
 
 namespace Jbta.VirtualFileSystem.Impl
 {
@@ -6,12 +7,15 @@ namespace Jbta.VirtualFileSystem.Impl
     {
         private readonly IFileSystemMeta _fileSystemMeta;
         private readonly FileCreator _fileCreator;
+        private readonly Unmounter _unmounter;
 
-        public FileSystem(string volumePath, IFileSystemMeta fileSystemMeta, FileCreator fileCreator)
+        public FileSystem(string volumePath, IFileSystemMeta fileSystemMeta, FileCreator fileCreator, Unmounter unmounter)
         {
             VolumePath = volumePath;
             _fileSystemMeta = fileSystemMeta;
             _fileCreator = fileCreator;
+            _unmounter = unmounter;
+            IsMounted = true;
         }
         
         public string VolumePath { get; }
@@ -22,6 +26,8 @@ namespace Jbta.VirtualFileSystem.Impl
 
         public ulong UnusedSpace => VolumeSize - UsedSpace;
         
+        public bool IsMounted { get; private set; }
+
         public Task<IFile> CreateFile(string fileName) => _fileCreator.CreateFile(fileName);
 
         public void DeleteFile(string path)
@@ -36,7 +42,8 @@ namespace Jbta.VirtualFileSystem.Impl
 
         public void Dispose()
         {
-            throw new System.NotImplementedException();
+            _unmounter.Unmount().Wait();
+            IsMounted = false;
         }
     }
 }

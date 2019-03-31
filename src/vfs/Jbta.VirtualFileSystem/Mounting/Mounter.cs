@@ -4,6 +4,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Impl;
+using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Mounting
 {
@@ -17,25 +18,25 @@ namespace Jbta.VirtualFileSystem.Mounting
             var volume = new Volume(volumePath, blockSize);
             var superblock = await ReadSuperblock(volume);
             
+            await MarkFileSystemAsDirty(volume, superblock);
+
             return FileSystemFactory.CreateFileSystem(volumePath, volume, superblock);
-        }
-        
-        public void Unmount(string volumePath)
-        {
-            if (!System.IO.File.Exists(volumePath)) throw new VolumeNotFoundException(volumePath);
-            
-            throw new NotImplementedException();
         }
 
         private static int ValidateHeader(string volumePath)
         {
-            var buffer = new byte[12];
+            var buffer = new byte[sizeof(int) + sizeof(bool) + sizeof(int)];
             using (var stream = new FileStream(volumePath, FileMode.Open))
+            {
                 stream.Read(buffer);
+            }
 
-            var magicNumber = BitConverter.ToInt32(buffer, 0);
-            var isDirty = BitConverter.ToBoolean(buffer, 4);
-            var blockSize = BitConverter.ToInt32(buffer, 8);
+            var offset = 0;
+            var magicNumber = BitConverter.ToInt32(buffer, offset);
+            offset += sizeof(int) - 1;
+            var isDirty = BitConverter.ToBoolean(buffer, offset);
+            offset += sizeof(bool);
+            var blockSize = BitConverter.ToInt32(buffer, offset);
             
             if (magicNumber != GlobalConstant.SuperblockMagicNumber)
             {
@@ -54,6 +55,12 @@ namespace Jbta.VirtualFileSystem.Mounting
             var superblockData = await volume.ReadBlocks(0, 1);
             using (var ms = new MemoryStream(superblockData))
                 return (Superblock) new BinaryFormatter().Deserialize(ms);
+        }
+
+        private static ValueTask MarkFileSystemAsDirty(Volume volume, Superblock superblock)
+        {
+            superblock.IsDirty = !superblock.IsDirty;
+            return volume.WriteBlocks(superblock.Serialize().ToArray(), new[] {0});
         }
     }
 }

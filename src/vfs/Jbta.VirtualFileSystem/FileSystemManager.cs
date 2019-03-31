@@ -58,16 +58,15 @@ namespace Jbta.VirtualFileSystem
             }
         }
 
-        public static void Unmount(string volumePath)
+        public static void Unmount(IFileSystem fileSystem)
         {
-            if (string.IsNullOrWhiteSpace(volumePath))
-                throw new ArgumentException("Volume path cannot be null or whitespace");
-
-            if (!_instance._mountedFileSystems.ContainsKey(volumePath)) return;
+            if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
+            
+            if (!_instance._mountedFileSystems.ContainsKey(fileSystem.VolumePath)) return;
             lock (Locker)
             {
-                if (!_instance._mountedFileSystems.ContainsKey(volumePath)) return;
-                if (_instance._mountedFileSystems.Remove(volumePath, out var fileSystem)) fileSystem.Dispose();
+                if (!_instance._mountedFileSystems.ContainsKey(fileSystem.VolumePath)) return;
+                if (_instance._mountedFileSystems.Remove(fileSystem.VolumePath, out var fs)) fs.Dispose();
             }
         }
     }

@@ -12,6 +12,8 @@ namespace Jbta.VirtualFileSystem
         ulong UsedSpace { get; }
         
         ulong UnusedSpace { get; }
+        
+        bool IsMounted { get; }
 
         Task<IFile> CreateFile(string path);
         
