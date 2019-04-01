@@ -28,7 +28,7 @@ namespace Jbta.VirtualFileSystem.Impl
 
         public int Size => CalcDataBlocksSizeInBytes(_fileSystemMeta.BlockSize) + _fileSystemMeta.BlockSize;
 
-        public Task<byte[]> Read(int offset, int length)
+        public Task<Memory<byte>> Read(int offset, int length)
         {
             using (_locker.ReaderLock())
             {

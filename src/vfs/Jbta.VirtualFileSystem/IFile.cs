@@ -9,7 +9,7 @@ namespace Jbta.VirtualFileSystem
         
         int Size { get; }
 
-        Task<byte[]> Read(int offset, int length);
+        Task<Memory<byte>> Read(int offset, int length);
        
         Task Write(int offset, byte[] data);
     }

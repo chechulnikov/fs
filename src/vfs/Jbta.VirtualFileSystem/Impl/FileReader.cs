@@ -1,7 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Impl.Blocks;
+using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Impl
 {
@@ -18,61 +19,90 @@ namespace Jbta.VirtualFileSystem.Impl
             _volumeReader = volumeReader;
         }
 
-        public async Task<byte[]> Read(FileMetaBlock fileMetaBlock, int offsetInBytes, int lengthInBytes)
+        public async Task<Memory<byte>> Read(FileMetaBlock fileMetaBlock, int offsetInBytes, int lengthInBytes)
         {
             var startBlockNumberInFile = BytesToBlockNumber(offsetInBytes);
             var blocksCountForReading = BytesToBlockNumber(lengthInBytes);
             
-            var buffer = new byte[lengthInBytes];
+            var directBlocksCountForReading = CalcDirectBlocksCountForReading(fileMetaBlock, startBlockNumberInFile, blocksCountForReading);
+            var indirectBlocksCountForReading = blocksCountForReading - directBlocksCountForReading;
 
+            var buffer = new byte[blocksCountForReading * _fileSystemMeta.BlockSize];
+            var bufferOffset = 0;
             if (startBlockNumberInFile < GlobalConstant.MaxFileDirectBlocksCount)
             {
-                await ReadDirectBlocks(buffer, fileMetaBlock, startBlockNumberInFile, blocksCountForReading);
+                // read direct blocks
+                bufferOffset = await ReadByChunks(buffer, bufferOffset, fileMetaBlock.DirectBlocks, startBlockNumberInFile, directBlocksCountForReading);
             }
-            if (blocksCountForReading >= GlobalConstant.MaxFileDirectBlocksCount + startBlockNumberInFile)
+            if (indirectBlocksCountForReading > 0)
             {
-                await ReadIndirectBlocks(buffer, fileMetaBlock);
+                // read indirect blocks
+                var startIndirectBlockIndexInFile = CalcStartIndirectBlockNumberInFile(startBlockNumberInFile);
+                await ReadIndirectBlocks(buffer, bufferOffset, fileMetaBlock, startIndirectBlockIndexInFile, indirectBlocksCountForReading);
             }
 
-            return buffer;
+            return new Memory<byte>(buffer, offsetInBytes - startBlockNumberInFile * _fileSystemMeta.BlockSize, lengthInBytes);
         }
 
-        private int BytesToBlockNumber(int lengthInBytes)
+        private int BytesToBlockNumber(int lengthInBytes) =>
+            lengthInBytes.DivideWithUpRounding(_fileSystemMeta.BlockSize);
+
+        private async Task ReadIndirectBlocks(
+            byte[] buffer, int bufferOffset, FileMetaBlock fileMetaBlock, int startBlockNumberInFileForIndirectBlocks, int blocksCountForReading)
         {
-            var div = lengthInBytes / _fileSystemMeta.BlockSize;
-            return lengthInBytes % _fileSystemMeta.BlockSize == 0 ? div : div + 1;
+            var dataBlocksCountPerIndirectBlock = _fileSystemMeta.BlockSize / sizeof(int);
+            var startIndirectBlocksIndex = startBlockNumberInFileForIndirectBlocks.DivideWithUpRounding(dataBlocksCountPerIndirectBlock);
+            var indirectBlocksCount = blocksCountForReading.DivideWithUpRounding(dataBlocksCountPerIndirectBlock);
+
+            // read indirect blocks
+            var indirectBlocksData = new byte[indirectBlocksCount * _fileSystemMeta.BlockSize];
+            await ReadByChunks(indirectBlocksData, 0, fileMetaBlock.IndirectBlocks, startIndirectBlocksIndex, indirectBlocksCount);
+            var dataBlocksNumbers = indirectBlocksData.ToIntArray();
+
+            // read data blocks by numbers from indirect blocks
+            await ReadByChunks(buffer, bufferOffset, dataBlocksNumbers, 0, dataBlocksNumbers.Length);
         }
-        
-        private async Task ReadDirectBlocks(
-            byte[] buffer, FileMetaBlock fileMetaBlock, int startBlockNumberInFile, int blocksCountForReading)
+
+        private static int CalcDirectBlocksCountForReading(
+            FileMetaBlock fileMetaBlock, int startBlockNumberInFile, int blocksCountForReading)
         {
             var endBlockNumberInFile = startBlockNumberInFile + blocksCountForReading;
-            var maxBlockNumber = endBlockNumberInFile < fileMetaBlock.DirectBlocks.Length
+            return endBlockNumberInFile < fileMetaBlock.DirectBlocksCount
                 ? endBlockNumberInFile
-                : fileMetaBlock.DirectBlocks.Length;
-            
-            var startBlockNumberInChunk = fileMetaBlock.DirectBlocks[startBlockNumberInFile];
+                : fileMetaBlock.DirectBlocksCount;
+        }
+
+        private static int CalcStartIndirectBlockNumberInFile(int startBlockNumberInFile)
+        {
+            return startBlockNumberInFile < GlobalConstant.MaxFileDirectBlocksCount
+                ? 0
+                : startBlockNumberInFile - GlobalConstant.MaxFileDirectBlocksCount;
+        }
+
+        private async Task<int> ReadByChunks(
+            byte[] buffer, int bufferOffset, IReadOnlyList<int> blocksNumbers, int startBlockIndex, int blocksCount)
+        {
+            var startBlockNumberInChunk = blocksNumbers[startBlockIndex];
             var blocksCountInChunk = 1;
-            for (var i = 1; i < maxBlockNumber; i++)
+            for (var i = startBlockIndex; i < blocksCount; i++)
             {
-                if (fileMetaBlock.DirectBlocks[i - 1] + 1 == fileMetaBlock.DirectBlocks[i])
+                if (blocksNumbers[i - 1] + 1 == blocksNumbers[i])
                 {
                     blocksCountInChunk++;
                     continue;
                 }
 
-                var memory = new Memory<byte>(buffer, startBlockNumberInChunk,blocksCountInChunk * _fileSystemMeta.BlockSize);
+                var length = blocksCountInChunk * _fileSystemMeta.BlockSize;
+                var memory = new Memory<byte>(buffer, bufferOffset, length);
+                
                 await _volumeReader.ReadBlocksToBuffer(memory, startBlockNumberInChunk);
 
-                startBlockNumberInChunk = fileMetaBlock.DirectBlocks[i];
+                startBlockNumberInChunk = blocksNumbers[i];
                 blocksCountInChunk = 1;
+                bufferOffset += length + 1;
             }
-        }
-        
-        private Task ReadIndirectBlocks(byte[] buffer, FileMetaBlock fileMetaBlock)
-        {
-            // todo not implemented
-            return Task.FromResult(0);
+
+            return bufferOffset;
         }
     }
 }
