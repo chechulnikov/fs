@@ -70,15 +70,15 @@ namespace Jbta.VirtualFileSystem.Impl
             if (addingBlocksCount > 0)
             {
                 // 2.0. write data blocks
-                var dataAllocationResult = _allocator.AllocateBlocks(addingBlocksCount);
-                await _volumeWriter.WriteBlocks(data, dataAllocationResult.ReservedBlocks);
+                var reservedBlocksNumbers = _allocator.AllocateBlocks(addingBlocksCount);
+                await _volumeWriter.WriteBlocks(data, reservedBlocksNumbers);
                 
                 // add to file meta block
                 // 2.1. adding to direct blocks list
                 var freeDirectBlocksCount = GlobalConstant.FileDirectBlocksCount - fileMetaBlock.DirectBlocks.Count;
                 if (freeDirectBlocksCount > 0)
                 {
-                    var blockNumbersForDirectPlacement = dataAllocationResult.ReservedBlocks.Take(freeDirectBlocksCount);
+                    var blockNumbersForDirectPlacement = reservedBlocksNumbers.Take(freeDirectBlocksCount);
                     foreach (var dataBlockNumber in blockNumbersForDirectPlacement)
                     {
                         fileMetaBlock.DirectBlocks.Add(dataBlockNumber);
@@ -86,16 +86,16 @@ namespace Jbta.VirtualFileSystem.Impl
                 }
                 
                 // 2.2. adding to indirect blocks list
-                var blocksNumbersForIndirectPlacement = dataAllocationResult.ReservedBlocks.Skip(freeDirectBlocksCount).ToArray();
+                var blocksNumbersForIndirectPlacement = reservedBlocksNumbers.Skip(freeDirectBlocksCount).ToArray();
                 if (blocksNumbersForIndirectPlacement.Any())
                 {
-                    var indirectBlocksAllocationResult = _allocator
+                    var reservedIndirectBlocksNumbers = _allocator
                         .AllocateBytes(blocksNumbersForIndirectPlacement.Length / sizeof(int));
 
                     var newIndirectBlocks = blocksNumbersForIndirectPlacement.ToByteArray();
-                    await _volumeWriter.WriteBlocks(newIndirectBlocks, indirectBlocksAllocationResult.ReservedBlocks);
+                    await _volumeWriter.WriteBlocks(newIndirectBlocks, reservedIndirectBlocksNumbers);
                     
-                    foreach (var dataBlockNumber in indirectBlocksAllocationResult.ReservedBlocks)
+                    foreach (var dataBlockNumber in reservedIndirectBlocksNumbers)
                     {
                         fileMetaBlock.IndirectBlocks.Add(dataBlockNumber);
                     }

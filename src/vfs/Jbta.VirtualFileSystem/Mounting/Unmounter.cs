@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Impl;
 using Jbta.VirtualFileSystem.Utils;

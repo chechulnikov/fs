@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Vfs.Initialization;
 using Xunit;
 
 namespace Vfs.Tests

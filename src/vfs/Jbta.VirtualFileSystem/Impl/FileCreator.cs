@@ -27,8 +27,8 @@ namespace Jbta.VirtualFileSystem.Impl
             }
             
             var fileMetaBlock = new FileMetaBlock();
-            var allocationResult = _allocator.AllocateBlocks(1);
-            await _volumeWriter.WriteBlocks(fileMetaBlock.Serialize(), allocationResult.ReservedBlocks);
+            var reservedBlocksNumbers = _allocator.AllocateBlocks(1);
+            await _volumeWriter.WriteBlocks(fileMetaBlock.Serialize(), reservedBlocksNumbers);
             return _fileFactory.New(fileMetaBlock, name);
         } 
     }

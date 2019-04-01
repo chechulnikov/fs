@@ -1,10 +1,7 @@
 using System;
 using System.IO;
-using System.Linq.Expressions;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
-using Vfs.Initialization;
 using Xunit;
 
 namespace Vfs.Tests

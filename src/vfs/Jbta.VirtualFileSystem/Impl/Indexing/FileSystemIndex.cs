@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace Jbta.VirtualFileSystem.Impl.Indexing
 {
     internal class FileSystemIndex

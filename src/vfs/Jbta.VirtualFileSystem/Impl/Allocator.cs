@@ -17,16 +17,11 @@ namespace Jbta.VirtualFileSystem.Impl
         /// Allocates bytes in blocks by given bytes count
         /// </summary>
         /// <param name="bytesCount">Count of bytes, that should be allocated</param>
-        /// <returns>Allocation result with count of allocated bytes and allocated blocks numbers</returns>
-        public AllocationResult AllocateBytes(int bytesCount)
+        /// <returns>Allocated blocks numbers</returns>
+        public IReadOnlyList<int> AllocateBytes(int bytesCount)
         {
             var blocksCount = CalcBlocksCount(bytesCount);
-
-            return new AllocationResult
-            {
-                BytesAllocated = blocksCount * _fileSystemMeta.BlockSize,
-                ReservedBlocks = ReserveBlocks(blocksCount)
-            };
+            return AllocateBlocks(blocksCount);
         }
         
         /// <summary>
@@ -34,33 +29,24 @@ namespace Jbta.VirtualFileSystem.Impl
         /// </summary>
         /// <param name="blocksCount">Count of blocks of bytes, that should be allocated</param>
         /// <returns>Allocation result with count of allocated bytes and allocated blocks numbers</returns>
-        public AllocationResult AllocateBlocks(int blocksCount)
+        public IReadOnlyList<int> AllocateBlocks(int blocksCount)
         {
-            return new AllocationResult
-            {
-                BytesAllocated = blocksCount * _fileSystemMeta.BlockSize,
-                ReservedBlocks = ReserveBlocks(blocksCount)
-            };
-        }
-        
-        private int CalcBlocksCount(int bytesCount)
-        {
-            var blocksCount = bytesCount / _fileSystemMeta.BlockSize;
-            return bytesCount % _fileSystemMeta.BlockSize == 0 ? blocksCount : blocksCount + 1;
-        }
-
-        private IReadOnlyList<int> ReserveBlocks(int countOfBlocks)
-        {
-            var blocksNumbers = new int[countOfBlocks];
+            var blocksNumbers = new int[blocksCount];
 
             blocksNumbers[0] = _bitmap.SetFirstUnsetBit();
-            for (var i = 1; i < countOfBlocks; i++)
+            for (var i = 1; i < blocksCount; i++)
             {
                 var blockNumber = blocksNumbers[i - 1] + 1;
                 blocksNumbers[i] = _bitmap.TrySetBit(blockNumber) ? blockNumber : _bitmap.SetFirstUnsetBit();
             }
 
             return blocksNumbers;
+        }
+
+        private int CalcBlocksCount(int bytesCount)
+        {
+            var blocksCount = bytesCount / _fileSystemMeta.BlockSize;
+            return bytesCount % _fileSystemMeta.BlockSize == 0 ? blocksCount : blocksCount + 1;
         }
     }
 }
