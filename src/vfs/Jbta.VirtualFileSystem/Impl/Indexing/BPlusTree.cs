@@ -57,22 +57,22 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
                 {
                     // find position for new key
                     var position = 0;
-                    while (position < leaf.KeysCount && LessThan(leaf.Keys[position], key))
+                    while (position < leaf.KeysNumber && LessThan(leaf.Keys[position], key))
                     {
                         position++;
                     }
                     
                     // key inserting
-                    for (var i = leaf.KeysCount; i >= position + 1; i--)
+                    for (var i = leaf.KeysNumber; i >= position + 1; i--)
                     {
                         leaf.Keys[i] = leaf.Keys[i - 1];
                         leaf.Pointers[i] = leaf.Pointers[i - 1];
                     }
                     leaf.Keys[position] = key;
                     leaf.Pointers[position] = value;
-                    leaf.KeysCount++;
+                    leaf.KeysNumber++;
 
-                    if (leaf.KeysCount == 2 * Degree)
+                    if (leaf.KeysNumber == 2 * Degree)
                     {
                         Split(leaf);
                     }
@@ -87,9 +87,9 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
             var current = Root;
             while (!current.IsLeaf)
             {
-                for (var i = 0; i <= current.KeysCount; i++)
+                for (var i = 0; i <= current.KeysNumber; i++)
                 {
-                    if (i == current.KeysCount || LessThan(key, current.Keys[i]))
+                    if (i == current.KeysNumber || LessThan(key, current.Keys[i]))
                     {
                         current = current.Children[i];
                         break;
@@ -111,23 +111,23 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
             
             // move t-1 values and according pointers to newNode
             var midKey = node.Keys[Degree];
-            newNode.KeysCount = Degree - 1;
-            node.KeysCount = Degree;
-            for (var i = 0; i < newNode.KeysCount; i++)
+            newNode.KeysNumber = Degree - 1;
+            node.KeysNumber = Degree;
+            for (var i = 0; i < newNode.KeysNumber; i++)
             {
                 newNode.Keys[i] = node.Keys[i + Degree + 1];
                 newNode.Pointers[i] = node.Pointers[i + Degree + 1];
                 newNode.Children[i] = node.Children[i + Degree + 1];
-                newNode.Children[newNode.KeysCount] = node.Children[2 * Degree];
+                newNode.Children[newNode.KeysNumber] = node.Children[2 * Degree];
             }
             
             if (node.IsLeaf)
             {
-                newNode.KeysCount++;
+                newNode.KeysNumber++;
                 newNode.IsLeaf = true;
                 
                 // move into newNode element midKey
-                for (var i = newNode.KeysCount - 1; i >= 1; i--)
+                for (var i = newNode.KeysNumber - 1; i >= 1; i--)
                 {
                     newNode.Keys[i] = newNode.Keys[i - 1];
                     newNode.Pointers[i] = newNode.Pointers[i - 1];
@@ -143,7 +143,7 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
                 Root.Keys[0] = midKey;
                 Root.Children[0] = node;
                 Root.Children[1] = _nodesFactory.New();
-                Root.KeysCount = 1;
+                Root.KeysNumber = 1;
                 node.Parent = Root;
                 newNode.Parent = Root;
             }
@@ -154,26 +154,26 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
                 
                 // find position midKey into parent
                 var position = 0;
-                while (position < parent.KeysCount && LessThan(parent.Keys[position], midKey))
+                while (position < parent.KeysNumber && LessThan(parent.Keys[position], midKey))
                 {
                     position++;
                 }
                 
                 // add midKey into parent and wire reference from it to newNode
-                for (var i = parent.KeysCount; i >= position + 1; i--)
+                for (var i = parent.KeysNumber; i >= position + 1; i--)
                 {
                     parent.Keys[i] = parent.Keys[i - 1];
                 }
-                for (var i = parent.KeysCount + 1; i >= position + 2; i--)
+                for (var i = parent.KeysNumber + 1; i >= position + 2; i--)
                 {
                     parent.Children[i] = parent.Children[i - 1];
                 }
 
                 parent.Keys[position] = midKey;
                 parent.Children[position + 1] = newNode;
-                parent.KeysCount++;
+                parent.KeysNumber++;
 
-                if (parent.KeysCount == 2 * Degree)
+                if (parent.KeysNumber == 2 * Degree)
                 {
                     Split(parent);
                 }

@@ -8,7 +8,7 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
         
         bool IsLeaf { get; set; }
             
-        int KeysCount { get; set; }
+        int KeysNumber { get; set; }
             
         string[] Keys { get; set; }
             

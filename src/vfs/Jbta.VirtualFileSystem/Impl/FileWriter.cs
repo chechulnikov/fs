@@ -8,12 +8,12 @@ namespace Jbta.VirtualFileSystem.Impl
 {
     internal class FileWriter
     {
-        private readonly IFileSystemMeta _fileSystemMeta;
+        private readonly FileSystemMeta _fileSystemMeta;
         private readonly Allocator _allocator;
         private readonly Volume _volume;
 
         public FileWriter(
-            IFileSystemMeta fileSystemMeta,
+            FileSystemMeta fileSystemMeta,
             Allocator allocator,
             Volume volume)
         {
@@ -51,7 +51,8 @@ namespace Jbta.VirtualFileSystem.Impl
                     var directBlockNumbers = fileMetaBlock.DirectBlocks.Skip(startBlockNumberInFile + 1).Take(updatingBlocksCount - 1);
                     foreach (var directBlockNumber in directBlockNumbers)
                     {
-                        await _volume.WriteBlocks()
+                        // todo
+                        //await _volume.WriteBlocks()
                     }
                     //todo
                 }

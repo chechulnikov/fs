@@ -5,22 +5,31 @@ namespace Jbta.VirtualFileSystem.Impl
 {
     internal class FileSystem : IFileSystem
     {
-        private readonly IFileSystemMeta _fileSystemMeta;
+        private readonly FileSystemMeta _fileSystemMeta;
         private readonly FileCreator _fileCreator;
+        private readonly FileOpener _fileOpener;
         private readonly Unmounter _unmounter;
 
-        public FileSystem(string volumePath, IFileSystemMeta fileSystemMeta, FileCreator fileCreator, Unmounter unmounter)
+        public FileSystem(
+            string volumePath,
+            FileSystemMeta fileSystemMeta,
+            FileCreator fileCreator,
+            FileOpener fileOpener,
+            Unmounter unmounter)
         {
             VolumePath = volumePath;
             _fileSystemMeta = fileSystemMeta;
             _fileCreator = fileCreator;
+            _fileOpener = fileOpener;
             _unmounter = unmounter;
             IsMounted = true;
         }
+
+        private int BlocksCount => _fileSystemMeta.BlockSize * GlobalConstant.BitmapBlocksCount * 8;
         
         public string VolumePath { get; }
 
-        public ulong VolumeSize => (ulong) (_fileSystemMeta.BlockSize * _fileSystemMeta.BlocksCount);
+        public ulong VolumeSize => (ulong) (_fileSystemMeta.BlockSize * BlocksCount);
         
         public ulong UsedSpace => (ulong) (_fileSystemMeta.BlockSize * _fileSystemMeta.UsedBlocksCount);
 
@@ -35,10 +44,7 @@ namespace Jbta.VirtualFileSystem.Impl
             throw new System.NotImplementedException();
         }
 
-        public IFile OpenFile(string path)
-        {
-            throw new System.NotImplementedException();
-        }
+        public Task<IFile> OpenFile(string path) => _fileOpener.Open(path);
 
         public void Dispose()
         {

@@ -28,7 +28,7 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
         
         public int RightSiblingBlockNumber { get; set; }
         
-        public int KeysCount { get; set; }
+        public int KeysNumber { get; set; }
         
         public string[] Keys { get; set; }
         
@@ -59,12 +59,12 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
             offset += sizeof(int);
             BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), RightSiblingBlockNumber);
             offset += sizeof(int);
-            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), KeysCount);
+            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), KeysNumber);
             offset += sizeof(int);
             foreach (var key in Keys)
             {
-                Encoding.Unicode.GetBytes(key, new Span<byte>(result, offset, GlobalConstant.FileNameSizeInBytes));
-                offset += GlobalConstant.FileNameSizeInBytes;
+                Encoding.Unicode.GetBytes(key, new Span<byte>(result, offset, GlobalConstant.MaxFileNameSizeInBytes));
+                offset += GlobalConstant.MaxFileNameSizeInBytes;
             }
             foreach (var childBlockNumber in ChildrenBlockNumbers)
             {
@@ -95,20 +95,20 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
             offset += sizeof(int);
             result.RightSiblingBlockNumber = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
-            result.KeysCount = BitConverter.ToInt32(data, offset);
+            result.KeysNumber = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
-            foreach (var i in Enumerable.Range(0, result.KeysCount))
+            foreach (var i in Enumerable.Range(0, result.KeysNumber))
             {
-                var key = Encoding.Unicode.GetString(new Span<byte>(data, offset, GlobalConstant.FileNameSizeInBytes));
+                var key = Encoding.Unicode.GetString(new Span<byte>(data, offset, GlobalConstant.MaxFileNameSizeInBytes));
                 result.Keys[i] = key;
-                offset += GlobalConstant.FileNameSizeInBytes;
+                offset += GlobalConstant.MaxFileNameSizeInBytes;
             }
-            foreach (var i in Enumerable.Range(0, result.KeysCount + 1))
+            foreach (var i in Enumerable.Range(0, result.KeysNumber + 1))
             {
                 result.ChildrenBlockNumbers[i] = BitConverter.ToInt32(data, offset);
                 offset += sizeof(int);
             }
-            foreach (var i in Enumerable.Range(0, result.KeysCount))
+            foreach (var i in Enumerable.Range(0, result.KeysNumber))
             {
                 result.Pointers[i] = BitConverter.ToInt32(data, offset);
                 offset += sizeof(int);

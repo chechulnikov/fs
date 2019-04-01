@@ -6,11 +6,11 @@ namespace Jbta.VirtualFileSystem.Impl
 {
     internal class FileReader
     {
-        private readonly IFileSystemMeta _fileSystemMeta;
+        private readonly FileSystemMeta _fileSystemMeta;
         private readonly Volume _volume;
 
         public FileReader(
-            IFileSystemMeta fileSystemMeta,
+            FileSystemMeta fileSystemMeta,
             Volume volume)
         {
             _fileSystemMeta = fileSystemMeta;

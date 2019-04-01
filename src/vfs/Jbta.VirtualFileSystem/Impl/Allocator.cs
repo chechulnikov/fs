@@ -4,15 +4,13 @@ namespace Jbta.VirtualFileSystem.Impl
 {
     internal class Allocator
     {
-        private readonly IFileSystemMeta _fileSystemMeta;
+        private readonly FileSystemMeta _fileSystemMeta;
         private readonly BitmapTree _bitmap;
 
-        public Allocator(Volume volume, IFileSystemMeta fileSystemMeta)
+        public Allocator(FileSystemMeta fileSystemMeta, BitmapTree bitmap)
         {
             _fileSystemMeta = fileSystemMeta;
-
-            var bitmapBlocks = ReadBitmapBlocks(volume);
-            _bitmap = new BitmapTree(bitmapBlocks);
+            _bitmap = bitmap;
         }
 
         /// <summary>
@@ -63,12 +61,6 @@ namespace Jbta.VirtualFileSystem.Impl
             }
 
             return blocksNumbers;
-        }
-
-        private byte[] ReadBitmapBlocks(Volume volume)
-        {
-            var bitmapBlocksCount = _fileSystemMeta.BlocksCount / _fileSystemMeta.BlockSize / 8;
-            return volume.ReadBlocks(1, bitmapBlocksCount).Result;
         }
     }
 }

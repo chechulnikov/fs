@@ -19,6 +19,6 @@ namespace Jbta.VirtualFileSystem
         
         void DeleteFile(string path);
         
-        IFile OpenFile(string path);
+        Task<IFile> OpenFile(string path);
     }
 }

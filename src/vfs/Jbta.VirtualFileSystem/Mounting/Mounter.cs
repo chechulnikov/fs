@@ -12,15 +12,14 @@ namespace Jbta.VirtualFileSystem.Mounting
     {
         public async Task<IFileSystem> Mount(string volumePath)
         {
-            if (!System.IO.File.Exists(volumePath)) throw new VolumeNotFoundException(volumePath);
             var blockSize = ValidateHeader(volumePath);
             
             var volume = new Volume(volumePath, blockSize);
             var superblock = await ReadSuperblock(volume);
-            
-            await MarkFileSystemAsDirty(volume, superblock);
 
-            return FileSystemFactory.CreateFileSystem(volumePath, volume, superblock);
+            await MarkFileSystemAsDirty(volume, superblock);
+            
+            return FileSystemFactory.New(volume, superblock);
         }
 
         private static int ValidateHeader(string volumePath)

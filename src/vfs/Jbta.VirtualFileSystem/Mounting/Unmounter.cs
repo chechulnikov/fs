@@ -7,20 +7,20 @@ namespace Jbta.VirtualFileSystem.Mounting
 {
     internal class Unmounter
     {
-        private readonly IFileSystemMeta _fileSystemMeta;
+        private readonly Superblock _superblock;
         private readonly Volume _volume;
 
-        public Unmounter(IFileSystemMeta fileSystemMeta, Volume volume)
+        public Unmounter(Superblock superblock, Volume volume)
         {
-            _fileSystemMeta = fileSystemMeta;
+            _superblock = superblock;
             _volume = volume;
         }
 
         public async Task Unmount()
         {
-            var superblock = (Superblock) _fileSystemMeta;
-            superblock.IsDirty = false;
-            await _volume.WriteBlocks(superblock.Serialize().ToArray(), new[] {0});
+            _superblock.IsDirty = false;
+            var superblockData = _superblock.Serialize().ToArray();
+            await _volume.WriteBlocks(superblockData, new[] {0});
         }
     }
 }

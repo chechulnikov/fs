@@ -33,7 +33,11 @@ namespace Jbta.VirtualFileSystem.Impl
             
             for (var i = bitmapData.Length - 1; i >= 0; i--)
                 _tree[i] = TreeOperation(_tree[2 * i], _tree[2 * i + 1]);
+
+            SetBitsCount = CountUnsetBits();
         }
+
+        public int SetBitsCount { get; private set; }
         
         /// <summary>
         /// Finds first unset bit and set it
@@ -69,11 +73,39 @@ namespace Jbta.VirtualFileSystem.Impl
             {
                if (this[bitNumber]) return false;
                this[bitNumber] = true;
+               SetBitsCount++;
                return true;
+            }
+        }
+        
+        /// <summary>
+        /// Tries to unset given bit
+        /// </summary>
+        /// <param name="bitNumber">Number of bit</param>
+        /// <returns>True, if bit was successfully unset</returns>
+        public bool TryUnsetBit(int bitNumber)
+        {
+            if (!this[bitNumber]) return false;
+            using (_locker.WriterLock())
+            {
+                if (!this[bitNumber]) return false;
+                this[bitNumber] = false;
+                SetBitsCount--;
+                return true;
             }
         }
 
         public void Dispose() => _locker?.Dispose();
+        
+        private int CountUnsetBits()
+        {
+            var unsetBitsCount = 0;
+            for (var i = _dataLength; i < _tree.Count; i++)
+                if (_tree[i])
+                    unsetBitsCount++;
+                    
+            return unsetBitsCount;
+        }
         
         // boolean min
         private static bool TreeOperation(bool first, bool second) => first && second;

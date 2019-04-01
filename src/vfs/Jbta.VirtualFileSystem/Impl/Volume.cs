@@ -8,20 +8,21 @@ namespace Jbta.VirtualFileSystem.Impl
 {
     internal class Volume
     {
-        private readonly string _volumePath;
         private readonly int _blockSize;
 
         public Volume(string volumePath, int blockSize)
         {
-            _volumePath = volumePath;
+            VolumePath = volumePath;
             _blockSize = blockSize;
         }
+        
+        public string VolumePath { get; }
         
         public async ValueTask<Memory<byte>> ReadBlocksToBuffer(Memory<byte> buffer, int startBlockNumber)
         {
             if (startBlockNumber < 0) throw new ArgumentOutOfRangeException(nameof(startBlockNumber));
             
-            using (var stream = System.IO.File.OpenRead(_volumePath))
+            using (var stream = System.IO.File.OpenRead(VolumePath))
             {
                 stream.Seek(startBlockNumber * _blockSize, SeekOrigin.Begin);
                 await stream.ReadAsync(buffer);
@@ -35,7 +36,7 @@ namespace Jbta.VirtualFileSystem.Impl
             if (blocksCount <= 0) throw new ArgumentOutOfRangeException(nameof(blocksCount));
 
             var buffer = new byte[blocksCount * _blockSize]; // TODO byte[] pool?
-            using (var stream = System.IO.File.OpenRead(_volumePath))
+            using (var stream = System.IO.File.OpenRead(VolumePath))
             {
                 stream.Seek(startBlockNumber * _blockSize, SeekOrigin.Begin);
                 await stream.ReadAsync(buffer, startBlockNumber * _blockSize, blocksCount * _blockSize);
@@ -48,7 +49,7 @@ namespace Jbta.VirtualFileSystem.Impl
             if (startBlockNumber < 0) throw new ArgumentOutOfRangeException(nameof(startBlockNumber));
             if (blocksCount <= 0) throw new ArgumentOutOfRangeException(nameof(blocksCount));
             
-            using (var stream = System.IO.File.OpenWrite(_volumePath))
+            using (var stream = System.IO.File.OpenWrite(VolumePath))
             {
                 stream.Seek(startBlockNumber * _blockSize, SeekOrigin.Begin);
                 await stream.WriteAsync(data, startBlockNumber * _blockSize, blocksCount * _blockSize);
@@ -60,7 +61,7 @@ namespace Jbta.VirtualFileSystem.Impl
             if (data.Length % _blockSize != 0)
                 throw new FileSystemException("Invalid data size");
 
-            using (var stream = System.IO.File.OpenWrite(_volumePath))
+            using (var stream = System.IO.File.OpenWrite(VolumePath))
             {
                 var startBlockNumberInChunk = blocksNumbers[0];
                 var blocksCountInChunk = 1;

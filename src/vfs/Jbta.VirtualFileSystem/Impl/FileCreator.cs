@@ -1,4 +1,6 @@
+using System;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Exceptions;
 
 namespace Jbta.VirtualFileSystem.Impl
 {
@@ -20,10 +22,17 @@ namespace Jbta.VirtualFileSystem.Impl
 
         public async Task<IFile> CreateFile(string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
+            if (name.Length > GlobalConstant.MaxFileNameSizeInBytes)
+            {
+                throw new FileSystemException($"File name cannot be greater then {GlobalConstant.MaxFileNameSizeInBytes} symbols");
+            }
+            
             var fileMetaBlock = new FileMetaBlock();
             var allocationResult = _allocator.AllocateBlocks(1);
             await _volume.WriteBlocks(fileMetaBlock.Serialize(), allocationResult.ReservedBlocks);
-            return _fileFactory.NewFile(fileMetaBlock, name, allocationResult.BytesAllocated);
+            return _fileFactory.New(fileMetaBlock, name, allocationResult.BytesAllocated);
         } 
     }
 }

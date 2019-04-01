@@ -11,7 +11,7 @@ namespace Jbta.VirtualFileSystem.Impl
             _writer = writer;
         }
         
-        public IFile NewFile(FileMetaBlock fileMetaBlock, string name, int size)
+        public IFile New(FileMetaBlock fileMetaBlock, string name, int size)
         {
             return new File(_fileReader, _writer, fileMetaBlock, name, size);
         }

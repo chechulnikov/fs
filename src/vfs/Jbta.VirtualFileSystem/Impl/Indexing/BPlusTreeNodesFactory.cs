@@ -2,9 +2,9 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
 {
     internal class BPlusTreeNodesFactory
     {
-        private readonly IFileSystemMeta _fileSystemMeta;
+        private readonly FileSystemMeta _fileSystemMeta;
 
-        public BPlusTreeNodesFactory(IFileSystemMeta fileSystemMeta)
+        public BPlusTreeNodesFactory(FileSystemMeta fileSystemMeta)
         {
             _fileSystemMeta = fileSystemMeta;
         }

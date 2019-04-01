@@ -11,7 +11,7 @@ namespace Jbta.VirtualFileSystem.Impl
         public const int FileIndirectBlocksCount = 1024;
 
         // 16 symbols
-        public const int FileNameSizeInBytes = 32;
+        public const int MaxFileNameSizeInBytes = 32;
 
         public const int BPlusTreeDegree = 10;
     }

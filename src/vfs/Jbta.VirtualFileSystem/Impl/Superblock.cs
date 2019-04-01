@@ -3,7 +3,7 @@
 namespace Jbta.VirtualFileSystem.Impl
 {
     [Serializable]
-    public class Superblock : IFileSystemMeta
+    public class Superblock
     {
         public int MagicNumber { get; set; }
         
@@ -11,8 +11,6 @@ namespace Jbta.VirtualFileSystem.Impl
         
         public int BlockSize { get; set; }
         
-        public int BlocksCount { get; set; }
-        
-        public int UsedBlocksCount { get; set; }
+        public int RootIndexBlockNumber { get; set; }
     }
 }

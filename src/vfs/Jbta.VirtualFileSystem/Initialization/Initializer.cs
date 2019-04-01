@@ -9,45 +9,24 @@ namespace Jbta.VirtualFileSystem.Initialization
 {
     internal class Initializer
     {
-        public ValueTask Initialize(FileSystemSettings settings)
+        public ValueTask Initialize(string volumePath)
         {
-            ValidateSettings(settings);
-            
-            var superblock = CreateSuperblock(settings);
-            var bitmap = CreateBitmap(settings);
-            var rootIndexBlock = CreateRootIndexBlock(settings);
-            return CreateVolume(settings, superblock, bitmap, rootIndexBlock);
+            var superblock = CreateSuperblock();
+            var bitmap = CreateBitmap();
+            var rootIndexBlock = CreateRootIndexBlock();
+            return CreateVolume(volumePath, superblock, bitmap, rootIndexBlock);
         }
 
-        private static void ValidateSettings(FileSystemSettings settings)
-        {
-            if (string.IsNullOrWhiteSpace(settings.VolumePath) || System.IO.File.Exists(settings.VolumePath))
-                throw new FileSystemInitException($"Volume \"{settings.VolumePath}\" cannot be created");
-
-            switch (settings.BlockSize)
-            {
-                case 1024:
-                case 2048:
-                case 4096:
-                case 8197:
-                    break;
-                default:
-                    throw new FileSystemInitException(
-                        $"Invalid block size {settings.BlockSize}. 1024, 2048, 4096, 8197 are only allowed");
-            }
-        }
-
-        private static Superblock CreateSuperblock(FileSystemSettings settings) => new Superblock
+        private static Superblock CreateSuperblock() => new Superblock
         {
             MagicNumber = GlobalConstant.SuperblockMagicNumber,
-            BlockSize = settings.BlockSize,
-            BlocksCount = settings.BlockSize * sizeof(byte) * GlobalConstant.BitmapBlocksCount,
-            UsedBlocksCount = 1 + GlobalConstant.BitmapBlocksCount
+            BlockSize = DefaultSettings.BlockSize,
+            IsDirty = false
         };
 
-        private static BitArray CreateBitmap(FileSystemSettings settings)
+        private static BitArray CreateBitmap()
         {
-            var bitArray = new BitArray(8 * settings.BlockSize * GlobalConstant.BitmapBlocksCount);
+            var bitArray = new BitArray(8 * DefaultSettings.BlockSize * GlobalConstant.BitmapBlocksCount);
             foreach (var i in Enumerable.Range(0, GlobalConstant.BitmapBlocksCount))
             {
                 bitArray.Set(i, true);
@@ -55,12 +34,12 @@ namespace Jbta.VirtualFileSystem.Initialization
             return bitArray;
         }
 
-        private static IndexBlock CreateRootIndexBlock(FileSystemSettings settings) => new IndexBlock(settings.BlockSize);
+        private static IndexBlock CreateRootIndexBlock() => new IndexBlock(DefaultSettings.BlockSize);
 
         private static async ValueTask CreateVolume(
-            FileSystemSettings settings, Superblock superblock, BitArray bitmap, IBinarySerializable indexBlock)
+            string volumePath, Superblock superblock, BitArray bitmap, IBinarySerializable indexBlock)
         {
-            var volume = new Volume(settings.VolumePath, settings.BlockSize);
+            var volume = new Volume(volumePath, DefaultSettings.BlockSize);
             await volume.WriteBlocks(superblock.Serialize().ToArray(), Enumerable.Range(0, 1).ToArray());
             await volume.WriteBlocks(bitmap.ToByteArray(), Enumerable.Range(1, GlobalConstant.BitmapBlocksCount).ToArray());
             await volume.WriteBlocks(indexBlock.Serialize(), Enumerable.Range(GlobalConstant.BitmapBlocksCount,1).ToArray());
