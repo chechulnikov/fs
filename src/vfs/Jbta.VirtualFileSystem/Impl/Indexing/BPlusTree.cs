@@ -27,7 +27,7 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
         
         public IBPlusTreeNode Root { get; private set; }
 
-        public int Search(string key)
+        public (int, bool) Search(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(key));
@@ -36,7 +36,7 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
             {
                 var leaf = FindLeaf(key);
                 var index = Array.IndexOf(leaf.Keys, key);
-                return leaf.Pointers[index];
+                return index < 0 ? (0, false) : (leaf.Pointers[index], true);
             }
         }
 

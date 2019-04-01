@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Impl.Indexing;
 
 namespace Jbta.VirtualFileSystem.Impl
@@ -21,7 +22,12 @@ namespace Jbta.VirtualFileSystem.Impl
 
         public async Task<IFile> Open(string fileName)
         {
-            var fileMetaBlockNumber = _fileSystemIndex.Search(fileName);
+            var (fileMetaBlockNumber, hasBeenFound) = _fileSystemIndex.Search(fileName);
+            if (!hasBeenFound)
+            {
+                throw new FileSystemException($"File \"{fileName}\" not found");
+            }
+            
             var fileMetaBlockData = await _volumeReader.ReadBlocks(fileMetaBlockNumber);
             var fileMetaBlock = FileMetaBlock.Deserialize(fileMetaBlockData);
             return _fileFactory.New(fileMetaBlock, fileName);
