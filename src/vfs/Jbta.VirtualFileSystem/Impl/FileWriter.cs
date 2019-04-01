@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Impl.Blocks;
 using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Impl
@@ -30,8 +32,7 @@ namespace Jbta.VirtualFileSystem.Impl
             var startBlockNumberInFile = BytesToBlockNumber(offsetInBytes);
             var blocksCountForWriting = BytesToBlockNumber(data.Length);
             
-            var fileDataBlocksCount = fileMetaBlock.CalcDataBlocksCount(_fileSystemMeta.BlockSize);
-            var fileDataBlocksSizeInBytes = fileMetaBlock.CalcDataBlocksSizeInBytes(_fileSystemMeta.BlockSize);
+            var fileDataBlocksCount = CalcDataBlocksCount(fileMetaBlock, _fileSystemMeta.BlockSize);
 
             // 1. update existed blocks
             var updatingBlocksCount = fileDataBlocksCount - startBlockNumberInFile;
@@ -49,7 +50,7 @@ namespace Jbta.VirtualFileSystem.Impl
                 }
                 
                 // 1.1. update direct blocks
-                if (startBlockNumberInFile < GlobalConstant.FileDirectBlocksCount)
+                if (startBlockNumberInFile < GlobalConstant.MaxFileDirectBlocksCount)
                 {
                     var directBlockNumbers = fileMetaBlock.DirectBlocks.Skip(startBlockNumberInFile + 1).Take(updatingBlocksCount - 1);
                     foreach (var directBlockNumber in directBlockNumbers)
@@ -75,13 +76,14 @@ namespace Jbta.VirtualFileSystem.Impl
                 
                 // add to file meta block
                 // 2.1. adding to direct blocks list
-                var freeDirectBlocksCount = GlobalConstant.FileDirectBlocksCount - fileMetaBlock.DirectBlocks.Count;
+                var freeDirectBlocksCount = GlobalConstant.MaxFileDirectBlocksCount - fileMetaBlock.DirectBlocksCount;
                 if (freeDirectBlocksCount > 0)
                 {
-                    var blockNumbersForDirectPlacement = reservedBlocksNumbers.Take(freeDirectBlocksCount);
-                    foreach (var dataBlockNumber in blockNumbersForDirectPlacement)
+                    var i = fileMetaBlock.DirectBlocksCount + 1;
+                    foreach (var dataBlockNumber in reservedBlocksNumbers.Take(freeDirectBlocksCount))
                     {
-                        fileMetaBlock.DirectBlocks.Add(dataBlockNumber);
+                        fileMetaBlock.DirectBlocks[i] = dataBlockNumber;
+                        i++;
                     }
                 }
                 
@@ -95,9 +97,11 @@ namespace Jbta.VirtualFileSystem.Impl
                     var newIndirectBlocks = blocksNumbersForIndirectPlacement.ToByteArray();
                     await _volumeWriter.WriteBlocks(newIndirectBlocks, reservedIndirectBlocksNumbers);
                     
+                    var i = fileMetaBlock.DirectBlocksCount + 1;
                     foreach (var dataBlockNumber in reservedIndirectBlocksNumbers)
                     {
-                        fileMetaBlock.IndirectBlocks.Add(dataBlockNumber);
+                        fileMetaBlock.IndirectBlocks[i] = dataBlockNumber;
+                        i++;
                     }
                 }
             }
@@ -109,14 +113,20 @@ namespace Jbta.VirtualFileSystem.Impl
             return bytesCount % _fileSystemMeta.BlockSize == 0 ? div : div + 1;
         }
 
+        private static int CalcDataBlocksCount(FileMetaBlock fileMetaBlock, int blockSize)
+        {
+            var indirectBlockCapacity = blockSize / sizeof(int);
+            return fileMetaBlock.DirectBlocksCount + fileMetaBlock.IndirectBlocksCount * indirectBlockCapacity;
+        }
+
         private async Task<int> GetBlockNumber(FileMetaBlock fileMetaBlock, int blockNumberInFile)
         {
-            if (blockNumberInFile < GlobalConstant.FileDirectBlocksCount)
+            if (blockNumberInFile < GlobalConstant.MaxFileDirectBlocksCount)
             {
                 return fileMetaBlock.DirectBlocks[blockNumberInFile];
             }
 
-            var t = blockNumberInFile - GlobalConstant.FileDirectBlocksCount; // todo rename
+            var t = blockNumberInFile - GlobalConstant.MaxFileDirectBlocksCount; // todo rename
             var dataBlocksPerIndirectBlock = _fileSystemMeta.BlockSize / sizeof(int);
             var div = t / dataBlocksPerIndirectBlock;
             var remaining = t % dataBlocksPerIndirectBlock;

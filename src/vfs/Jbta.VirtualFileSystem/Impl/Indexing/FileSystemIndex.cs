@@ -4,11 +4,10 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
     {
         private readonly BPlusTree _tree;
         
-        public FileSystemIndex(FileSystemMeta fileSystemMeta, byte[] rootIndexBlock)
+        public FileSystemIndex(BPlusTreeNodesFactory treeNodesFactory, byte[] rootIndexBlock)
         {
-            var nodesFactory = new BPlusTreeNodesFactory(fileSystemMeta);
-            var root = nodesFactory.From(rootIndexBlock);
-            _tree = new BPlusTree(nodesFactory, root);
+            var root = treeNodesFactory.From(rootIndexBlock);
+            _tree = new BPlusTree(treeNodesFactory, root);
         }
 
         public (int, bool) Search(string fileName) => _tree.Search(fileName);

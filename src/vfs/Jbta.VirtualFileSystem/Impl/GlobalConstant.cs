@@ -6,9 +6,9 @@ namespace Jbta.VirtualFileSystem.Impl
 
         public const int BitmapBlocksCount = 1024;
 
-        public const int FileDirectBlocksCount = 16;
+        public const int MaxFileDirectBlocksCount = 16;
 
-        public const int FileIndirectBlocksCount = 1024;
+        public const int MaxFileIndirectBlocksCount = 1024;
 
         // 16 symbols
         public const int MaxFileNameSize = 16;

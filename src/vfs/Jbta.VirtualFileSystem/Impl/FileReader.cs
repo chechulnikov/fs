@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
+using Jbta.VirtualFileSystem.Impl.Blocks;
 
 namespace Jbta.VirtualFileSystem.Impl
 {
@@ -19,22 +20,16 @@ namespace Jbta.VirtualFileSystem.Impl
 
         public async Task<byte[]> Read(FileMetaBlock fileMetaBlock, int offsetInBytes, int lengthInBytes)
         {
-            var fileBlocksCount = fileMetaBlock.CalcDataBlocksCount(_fileSystemMeta.BlockSize);
             var startBlockNumberInFile = BytesToBlockNumber(offsetInBytes);
             var blocksCountForReading = BytesToBlockNumber(lengthInBytes);
-
-            if (fileBlocksCount < blocksCountForReading)
-            {
-                throw new FileSystemException("Requested length is invalid");
-            }
             
             var buffer = new byte[lengthInBytes];
 
-            if (startBlockNumberInFile < GlobalConstant.FileDirectBlocksCount)
+            if (startBlockNumberInFile < GlobalConstant.MaxFileDirectBlocksCount)
             {
                 await ReadDirectBlocks(buffer, fileMetaBlock, startBlockNumberInFile, blocksCountForReading);
             }
-            if (blocksCountForReading >= GlobalConstant.FileDirectBlocksCount + startBlockNumberInFile)
+            if (blocksCountForReading >= GlobalConstant.MaxFileDirectBlocksCount + startBlockNumberInFile)
             {
                 await ReadIndirectBlocks(buffer, fileMetaBlock);
             }
@@ -52,9 +47,9 @@ namespace Jbta.VirtualFileSystem.Impl
             byte[] buffer, FileMetaBlock fileMetaBlock, int startBlockNumberInFile, int blocksCountForReading)
         {
             var endBlockNumberInFile = startBlockNumberInFile + blocksCountForReading;
-            var maxBlockNumber = endBlockNumberInFile < fileMetaBlock.DirectBlocks.Count
+            var maxBlockNumber = endBlockNumberInFile < fileMetaBlock.DirectBlocks.Length
                 ? endBlockNumberInFile
-                : fileMetaBlock.DirectBlocks.Count;
+                : fileMetaBlock.DirectBlocks.Length;
             
             var startBlockNumberInChunk = fileMetaBlock.DirectBlocks[startBlockNumberInFile];
             var blocksCountInChunk = 1;

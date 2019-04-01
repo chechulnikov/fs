@@ -4,7 +4,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Vfs.Tests
+namespace Jbta.VirtualFileSystem.Tests
 {
     public class InitializerTest : IDisposable
     {

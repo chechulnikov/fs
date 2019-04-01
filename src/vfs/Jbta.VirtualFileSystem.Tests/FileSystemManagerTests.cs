@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Vfs.Tests
+namespace Jbta.VirtualFileSystem.Tests
 {
     public class FileSystemManagerTests
     {

@@ -1,77 +1,47 @@
 using System;
 using System.Linq;
 using System.Text;
+using Jbta.VirtualFileSystem.Utils;
 
-namespace Jbta.VirtualFileSystem.Impl.Indexing
+namespace Jbta.VirtualFileSystem.Impl.Blocks.Serialization
 {
-    internal class IndexBlock : IBPlusTreeNode, IBinarySerializable
+    internal class IndexBlockSerializer : IBinarySerializer<IndexBlock>
     {
-        private readonly int _blockSizeInBytes;
-        private const int MaxKeysPerNode = GlobalConstant.BPlusTreeDegree;
+        private readonly int _blockSize;
 
-        public IndexBlock(int blockSizeInBytes)
+        public IndexBlockSerializer(int blockSize)
         {
-            _blockSizeInBytes = blockSizeInBytes;
-            Keys = new string[MaxKeysPerNode];
-            ChildrenBlockNumbers = new int[MaxKeysPerNode];
-            Children = new IBPlusTreeNode[MaxKeysPerNode + 1];
-            Pointers = new int[MaxKeysPerNode];
+            _blockSize = blockSize;
         }
         
-        public int BlockNumber { get; set; }
-            
-        public bool IsLeaf { get; set; }
-        
-        public int ParentBlockNumber { get; set; }
-        
-        public int LeftSiblingBlockNumber { get; set; }
-        
-        public int RightSiblingBlockNumber { get; set; }
-        
-        public int KeysNumber { get; set; }
-        
-        public string[] Keys { get; set; }
-        
-        public int[] ChildrenBlockNumbers { get; set; }
-        
-        public int[] Pointers { get; set; }
-        
-        public IBPlusTreeNode[] Children { get; set; }
-        
-        public IBPlusTreeNode Parent { get; set; }
-        
-        public IBPlusTreeNode LeftSibling { get; set; }
-        
-        public IBPlusTreeNode RightSibling { get; set; }
-        
-        public byte[] Serialize()
+        public byte[] Serialize(IndexBlock block)
         {
-            var result = new byte[_blockSizeInBytes];
+            var result = new byte[_blockSize];
             
             var offset = 0;
-            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), BlockNumber);
+            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), block.BlockNumber);
             offset += sizeof(int) - 1;
-            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(bool)), IsLeaf);
+            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(bool)), block.IsLeaf);
             offset += sizeof(bool);
-            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), ParentBlockNumber);
+            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), block.ParentBlockNumber);
             offset += sizeof(int);
-            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), LeftSiblingBlockNumber);
+            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), block.LeftSiblingBlockNumber);
             offset += sizeof(int);
-            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), RightSiblingBlockNumber);
+            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), block.RightSiblingBlockNumber);
             offset += sizeof(int);
-            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), KeysNumber);
+            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), block.KeysNumber);
             offset += sizeof(int);
-            foreach (var key in Keys)
+            foreach (var key in block.Keys)
             {
                 Encoding.Unicode.GetBytes(key, new Span<byte>(result, offset, GlobalConstant.MaxFileNameSizeInBytes));
                 offset += GlobalConstant.MaxFileNameSizeInBytes;
             }
-            foreach (var childBlockNumber in ChildrenBlockNumbers)
+            foreach (var childBlockNumber in block.ChildrenBlockNumbers)
             {
                 BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), childBlockNumber);
                 offset += sizeof(int);
             }
-            foreach (var pointer in Pointers)
+            foreach (var pointer in block.Pointers)
             {
                 BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), pointer);
                 offset += sizeof(int);
@@ -79,10 +49,10 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
 
             return result;
         }
-        
-        public static IndexBlock Deserialize(byte[] data)
+
+        public IndexBlock Deserialize(byte[] data)
         {
-            var result = new IndexBlock(data.Length);
+            var result = new IndexBlock();
 
             var offset = 0;
             result.BlockNumber = BitConverter.ToInt32(data, offset);

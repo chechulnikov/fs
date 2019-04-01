@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Impl.Blocks;
 using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Impl
@@ -23,11 +24,9 @@ namespace Jbta.VirtualFileSystem.Impl
             _locker = new ReaderWriterLockSlim();
         }
 
-        public Guid Id => _fileMetaBlock.FileId;
-
         public string Name { get; }
 
-        public int Size => _fileMetaBlock.CalcDataBlocksSizeInBytes(_fileSystemMeta.BlockSize) + _fileSystemMeta.BlockSize;
+        public int Size => CalcDataBlocksSizeInBytes(_fileSystemMeta.BlockSize) + _fileSystemMeta.BlockSize;
 
         public Task<byte[]> Read(int offset, int length)
         {
@@ -46,5 +45,11 @@ namespace Jbta.VirtualFileSystem.Impl
         }
 
         public void Dispose() => _locker?.Dispose();
+        
+        private int CalcDataBlocksSizeInBytes(int blockSize)
+        {
+            var indirectBlockCapacity = blockSize / sizeof(int);
+            return (_fileMetaBlock.DirectBlocksCount + _fileMetaBlock.IndirectBlocksCount * indirectBlockCapacity) * blockSize;
+        }
     }
 }

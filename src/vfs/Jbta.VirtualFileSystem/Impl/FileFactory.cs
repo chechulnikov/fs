@@ -1,3 +1,5 @@
+using Jbta.VirtualFileSystem.Impl.Blocks;
+
 namespace Jbta.VirtualFileSystem.Impl
 {
     internal class FileFactory

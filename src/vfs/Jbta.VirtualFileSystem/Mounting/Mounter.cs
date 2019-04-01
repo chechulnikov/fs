@@ -4,6 +4,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Impl;
+using Jbta.VirtualFileSystem.Impl.Blocks;
 using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Mounting

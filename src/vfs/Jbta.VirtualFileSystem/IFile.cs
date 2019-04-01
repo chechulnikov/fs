@@ -5,8 +5,6 @@ namespace Jbta.VirtualFileSystem
 {
     public interface IFile : IDisposable
     {
-        Guid Id { get; }
-        
         string Name { get; }
         
         int Size { get; }

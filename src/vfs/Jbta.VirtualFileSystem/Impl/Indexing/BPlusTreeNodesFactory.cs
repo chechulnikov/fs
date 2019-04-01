@@ -1,16 +1,19 @@
+using Jbta.VirtualFileSystem.Impl.Blocks;
+using Jbta.VirtualFileSystem.Utils;
+
 namespace Jbta.VirtualFileSystem.Impl.Indexing
 {
     internal class BPlusTreeNodesFactory
     {
-        private readonly FileSystemMeta _fileSystemMeta;
+        private readonly IBinarySerializer<IndexBlock> _indexBlockSerializer;
 
-        public BPlusTreeNodesFactory(FileSystemMeta fileSystemMeta)
+        public BPlusTreeNodesFactory(IBinarySerializer<IndexBlock> indexBlockSerializer)
         {
-            _fileSystemMeta = fileSystemMeta;
+            _indexBlockSerializer = indexBlockSerializer;
         }
         
-        public IBPlusTreeNode New() => new IndexBlock(_fileSystemMeta.BlockSize);
+        public IBPlusTreeNode New() => new IndexBlock();
 
-        public IBPlusTreeNode From(byte[] block) => IndexBlock.Deserialize(block);
+        public IBPlusTreeNode From(byte[] block) => _indexBlockSerializer.Deserialize(block);
     }
 }

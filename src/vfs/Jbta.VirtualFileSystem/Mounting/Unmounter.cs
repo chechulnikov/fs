@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Impl;
+using Jbta.VirtualFileSystem.Impl.Blocks;
 using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Mounting

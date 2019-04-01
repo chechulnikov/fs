@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Jbta.VirtualFileSystem.Impl
+namespace Jbta.VirtualFileSystem.Impl.Blocks
 {
     [Serializable]
     public class Superblock

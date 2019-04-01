@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
+using Jbta.VirtualFileSystem.Impl.Blocks;
 using Jbta.VirtualFileSystem.Impl.Indexing;
+using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Impl
 {
@@ -8,15 +10,18 @@ namespace Jbta.VirtualFileSystem.Impl
     {
         private readonly FileSystemIndex _fileSystemIndex;
         private readonly FileFactory _fileFactory;
+        private readonly IBinarySerializer<FileMetaBlock> _fileMetaBlockSerializer;
         private readonly IVolumeReader _volumeReader;
 
         public FileOpener(
             FileSystemIndex fileSystemIndex,
             FileFactory fileFactory,
+            IBinarySerializer<FileMetaBlock> fileMetaBlockSerializer,
             IVolumeReader volumeReader)
         {
             _fileSystemIndex = fileSystemIndex;
             _fileFactory = fileFactory;
+            _fileMetaBlockSerializer = fileMetaBlockSerializer;
             _volumeReader = volumeReader;
         }
 
@@ -29,7 +34,7 @@ namespace Jbta.VirtualFileSystem.Impl
             }
             
             var fileMetaBlockData = await _volumeReader.ReadBlocks(fileMetaBlockNumber);
-            var fileMetaBlock = FileMetaBlock.Deserialize(fileMetaBlockData);
+            var fileMetaBlock = _fileMetaBlockSerializer.Deserialize(fileMetaBlockData);
             return _fileFactory.New(fileMetaBlock, fileName);
         }
     }
