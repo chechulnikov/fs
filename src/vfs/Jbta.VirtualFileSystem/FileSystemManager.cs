@@ -53,7 +53,7 @@ namespace Jbta.VirtualFileSystem
                 if (_instance._mountedFileSystems.ContainsKey(volumePath))
                     return _instance._mountedFileSystems[volumePath];
                 
-                var fileSystem = _instance._mounter.Mount(volumePath).Result;
+                var fileSystem = Mounter.Mount(volumePath).Result;
                 _instance._mountedFileSystems.Add(volumePath, fileSystem);
                 return fileSystem;
             }

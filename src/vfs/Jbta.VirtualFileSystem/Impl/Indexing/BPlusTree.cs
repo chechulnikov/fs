@@ -14,18 +14,18 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
         private readonly BPlusTreeNodesFactory _nodesFactory;
         private readonly ReaderWriterLockSlim _locker;
         
-        public BPlusTree(BPlusTreeNodesFactory nodesFactory)
+        public BPlusTree(BPlusTreeNodesFactory nodesFactory, IBPlusTreeNode root)
         {
             _nodesFactory = nodesFactory;
             _locker = new ReaderWriterLockSlim();
             Degree = GlobalConstant.BPlusTreeDegree;
-            Root = _nodesFactory.New();
+            Root = root;
             Root.IsLeaf = true;
         }
 
         public int Degree { get; }
         
-        public IBPlusTreeNode Root { get; set; }
+        public IBPlusTreeNode Root { get; private set; }
 
         public int Search(string key)
         {

@@ -17,8 +17,10 @@ namespace Jbta.VirtualFileSystem
 
         Task<IFile> CreateFile(string path);
         
-        void DeleteFile(string path);
+        void DeleteFile(string fileName);
         
-        Task<IFile> OpenFile(string path);
+        Task<IFile> OpenFile(string fileName);
+
+        bool TryCloseFile(IFile file);
     }
 }

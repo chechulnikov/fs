@@ -10,7 +10,7 @@ namespace Jbta.VirtualFileSystem.Mounting
 {
     internal class Mounter
     {
-        public async Task<IFileSystem> Mount(string volumePath)
+        public static async Task<IFileSystem> Mount(string volumePath)
         {
             var blockSize = ValidateHeader(volumePath);
             
@@ -18,8 +18,11 @@ namespace Jbta.VirtualFileSystem.Mounting
             var superblock = await ReadSuperblock(volume);
 
             await MarkFileSystemAsDirty(volume, superblock);
+
+            var bitmapBlocks = await ReadBitmapBlocks(volume);
+            var rootIndexBlock = await ReadRootIndexBlock(volume, superblock.RootIndexBlockNumber);
             
-            return FileSystemFactory.New(volume, superblock);
+            return FileSystemFactory.New(volume, superblock, bitmapBlocks, rootIndexBlock);
         }
 
         private static int ValidateHeader(string volumePath)
@@ -49,17 +52,27 @@ namespace Jbta.VirtualFileSystem.Mounting
             return blockSize;
         }
         
-        private static async Task<Superblock> ReadSuperblock(Volume volume)
+        private static async ValueTask<Superblock> ReadSuperblock(Volume volume)
         {
             var superblockData = await volume.ReadBlocks(0, 1);
             using (var ms = new MemoryStream(superblockData))
                 return (Superblock) new BinaryFormatter().Deserialize(ms);
         }
 
-        private static ValueTask MarkFileSystemAsDirty(Volume volume, Superblock superblock)
+        private static ValueTask MarkFileSystemAsDirty(IVolumeWriter volume, Superblock superblock)
         {
             superblock.IsDirty = !superblock.IsDirty;
             return volume.WriteBlocks(superblock.Serialize().ToArray(), new[] {0});
+        }
+
+        private static ValueTask<byte[]> ReadBitmapBlocks(IVolumeReader volume)
+        {
+            return volume.ReadBlocks(1, GlobalConstant.BitmapBlocksCount);
+        }
+
+        private static ValueTask<byte[]> ReadRootIndexBlock(IVolumeReader volume, int rootIndexBlockNumber)
+        {
+            return volume.ReadBlocks(rootIndexBlockNumber, 1);
         }
     }
 }

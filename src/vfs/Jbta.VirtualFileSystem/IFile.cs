@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Jbta.VirtualFileSystem
 {
-    public interface IFile
+    public interface IFile : IDisposable
     {
         Guid Id { get; }
         

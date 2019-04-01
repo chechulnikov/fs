@@ -7,14 +7,14 @@ namespace Jbta.VirtualFileSystem.Impl
     internal class FileReader
     {
         private readonly FileSystemMeta _fileSystemMeta;
-        private readonly Volume _volume;
+        private readonly IVolumeReader _volumeReader;
 
         public FileReader(
             FileSystemMeta fileSystemMeta,
-            Volume volume)
+            IVolumeReader volumeReader)
         {
             _fileSystemMeta = fileSystemMeta;
-            _volume = volume;
+            _volumeReader = volumeReader;
         }
 
         public async Task<byte[]> Read(FileMetaBlock fileMetaBlock, int offsetInBytes, int lengthInBytes)
@@ -67,7 +67,7 @@ namespace Jbta.VirtualFileSystem.Impl
                 }
 
                 var memory = new Memory<byte>(buffer, startBlockNumberInChunk,blocksCountInChunk * _fileSystemMeta.BlockSize);
-                await _volume.ReadBlocksToBuffer(memory, startBlockNumberInChunk);
+                await _volumeReader.ReadBlocksToBuffer(memory, startBlockNumberInChunk);
 
                 startBlockNumberInChunk = fileMetaBlock.DirectBlocks[i];
                 blocksCountInChunk = 1;

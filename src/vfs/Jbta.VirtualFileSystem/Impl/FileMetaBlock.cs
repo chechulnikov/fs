@@ -43,5 +43,10 @@ namespace Jbta.VirtualFileSystem.Impl
         {
             throw new System.NotImplementedException();
         }
+
+        public static FileMetaBlock Deserialize(byte[] data)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

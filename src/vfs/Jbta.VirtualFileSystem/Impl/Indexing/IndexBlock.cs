@@ -80,7 +80,7 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
             return result;
         }
         
-        private static IndexBlock Deserialize(byte[] data)
+        public static IndexBlock Deserialize(byte[] data)
         {
             var result = new IndexBlock(data.Length);
 

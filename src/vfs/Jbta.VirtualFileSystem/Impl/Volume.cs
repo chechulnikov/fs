@@ -6,7 +6,7 @@ using Jbta.VirtualFileSystem.Exceptions;
 
 namespace Jbta.VirtualFileSystem.Impl
 {
-    internal class Volume
+    internal class Volume : IVolumeReader, IVolumeWriter
     {
         private readonly int _blockSize;
 
@@ -30,7 +30,7 @@ namespace Jbta.VirtualFileSystem.Impl
             return buffer;
         }
 
-        public async ValueTask<byte[]> ReadBlocks(int startBlockNumber, int blocksCount)
+        public async ValueTask<byte[]> ReadBlocks(int startBlockNumber, int blocksCount = 1)
         {
             if (startBlockNumber < 0) throw new ArgumentOutOfRangeException(nameof(startBlockNumber));
             if (blocksCount <= 0) throw new ArgumentOutOfRangeException(nameof(blocksCount));

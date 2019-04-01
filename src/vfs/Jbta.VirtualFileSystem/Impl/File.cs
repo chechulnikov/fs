@@ -7,18 +7,18 @@ namespace Jbta.VirtualFileSystem.Impl
 {
     internal class File : IFile
     {
+        private readonly FileSystemMeta _fileSystemMeta;
         private readonly FileReader _reader;
         private readonly FileWriter _writer;
         private readonly FileMetaBlock _fileMetaBlock;
-        private readonly int _blockSize;
         private readonly ReaderWriterLockSlim _locker;
 
-        public File(FileReader reader, FileWriter writer, FileMetaBlock fileMetaBlock, string name, int blockSize)
+        public File(FileSystemMeta fileSystemMeta, FileReader reader, FileWriter writer, FileMetaBlock fileMetaBlock, string name)
         {
+            _fileSystemMeta = fileSystemMeta;
             _reader = reader;
             _writer = writer;
             _fileMetaBlock = fileMetaBlock;
-            _blockSize = blockSize;
             Name = name;
             _locker = new ReaderWriterLockSlim();
         }
@@ -27,7 +27,7 @@ namespace Jbta.VirtualFileSystem.Impl
 
         public string Name { get; }
 
-        public int Size => _fileMetaBlock.CalcDataBlocksSizeInBytes(_blockSize) + _blockSize;
+        public int Size => _fileMetaBlock.CalcDataBlocksSizeInBytes(_fileSystemMeta.BlockSize) + _fileSystemMeta.BlockSize;
 
         public Task<byte[]> Read(int offset, int length)
         {
@@ -44,5 +44,7 @@ namespace Jbta.VirtualFileSystem.Impl
                 return _writer.Write(_fileMetaBlock, offset, data);
             }
         }
+
+        public void Dispose() => _locker?.Dispose();
     }
 }

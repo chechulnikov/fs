@@ -9,9 +9,8 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
             _fileSystemMeta = fileSystemMeta;
         }
         
-        public IBPlusTreeNode New()
-        {
-            return new IndexBlock(_fileSystemMeta.BlockSize);
-        }
+        public IBPlusTreeNode New() => new IndexBlock(_fileSystemMeta.BlockSize);
+
+        public IBPlusTreeNode From(byte[] block) => IndexBlock.Deserialize(block);
     }
 }
