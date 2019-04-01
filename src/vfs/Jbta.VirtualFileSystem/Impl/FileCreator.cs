@@ -11,20 +11,20 @@ namespace Jbta.VirtualFileSystem.Impl
         private readonly FileSystemIndex _fileSystemIndex;
         private readonly FileFactory _fileFactory;
         private readonly IBinarySerializer<FileMetaBlock> _fileMetaBlockSerializer;
-        private readonly Allocator _allocator;
+        private readonly BlocksAllocator _blocksAllocator;
         private readonly IVolumeWriter _volumeWriter;
 
         public FileCreator(
             FileSystemIndex fileSystemIndex,
             FileFactory fileFactory,
             IBinarySerializer<FileMetaBlock> fileMetaBlockSerializer,
-            Allocator allocator,
+            BlocksAllocator blocksAllocator,
             IVolumeWriter volumeWriter)
         {
             _fileSystemIndex = fileSystemIndex;
             _fileFactory = fileFactory;
             _fileMetaBlockSerializer = fileMetaBlockSerializer;
-            _allocator = allocator;
+            _blocksAllocator = blocksAllocator;
             _volumeWriter = volumeWriter;
         }
 
@@ -41,7 +41,7 @@ namespace Jbta.VirtualFileSystem.Impl
             }
             
             var fileMetaBlock = new FileMetaBlock();
-            var reservedBlocksNumbers = _allocator.AllocateBlocks(1);
+            var reservedBlocksNumbers = _blocksAllocator.AllocateBlocks(1);
             var fileMetaBlockData = _fileMetaBlockSerializer.Serialize(fileMetaBlock);
             await _volumeWriter.WriteBlocks(fileMetaBlockData, reservedBlocksNumbers);
             return _fileFactory.New(fileMetaBlock, fileName);

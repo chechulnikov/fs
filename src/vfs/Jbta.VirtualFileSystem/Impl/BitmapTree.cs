@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Utils;
@@ -7,7 +9,7 @@ using Jbta.VirtualFileSystem.Utils;
 namespace Jbta.VirtualFileSystem.Impl
 {
     /// <summary>
-    /// This tree provides first unset bit search search for O(log n)
+    /// This is a tree that provides first unset bit search search for O(log n)
     /// Example:
     ///    0       0
     ///  1   0   0   0
@@ -18,7 +20,7 @@ namespace Jbta.VirtualFileSystem.Impl
         private readonly ReaderWriterLockSlim _locker;
         private readonly int _dataLength;
         private readonly BitArray _tree;
-        
+
         public BitmapTree(byte[] data)
         {
             _locker = new ReaderWriterLockSlim();
@@ -72,8 +74,7 @@ namespace Jbta.VirtualFileSystem.Impl
             using (_locker.WriterLock())
             {
                if (this[bitNumber]) return false;
-               this[bitNumber] = true;
-               SetBitsCount++;
+               SetBit(bitNumber);
                return true;
             }
         }
@@ -89,10 +90,41 @@ namespace Jbta.VirtualFileSystem.Impl
             using (_locker.WriterLock())
             {
                 if (!this[bitNumber]) return false;
-                this[bitNumber] = false;
-                SetBitsCount--;
+                UnsetBit(bitNumber);
                 return true;
             }
+        }
+
+        public void UnsetBits(IEnumerable<int> bitNumbers)
+        {
+            using (_locker.WriterLock())
+            {
+                foreach (var bitNumber in bitNumbers)
+                {
+                    UnsetBit(bitNumber);
+                }
+            }
+        }
+        
+        public byte[] GetBitmapBlocks(IReadOnlyList<int> bitNumbers)
+        {
+            var bytes = new byte[bitNumbers.Count * _dataLength];
+            
+            var bitCount = _dataLength;
+            var booleans = new bool[8];
+            
+            for (var k = 0; k < bitNumbers.Count; k++)
+            {
+                var bitmapBlockNumber = bitNumbers[k].DivideWithUpRounding(_dataLength * 8);
+                for (int i = bitCount, j = 0; i < 2 * bitCount; i += 8, j++)
+                {
+                    for (var m = 0; m < 8; m++)
+                        booleans[m] = _tree[bitmapBlockNumber + i + m];
+                    bytes[k * bitCount + j] = booleans.ToByte();
+                }
+            }
+
+            return bytes;
         }
 
         public void Dispose() => _locker?.Dispose();
@@ -127,6 +159,18 @@ namespace Jbta.VirtualFileSystem.Impl
             }
                 
             return position - _dataLength;
+        }
+        
+        private void SetBit(int bitNumber)
+        {
+            this[bitNumber] = true;
+            SetBitsCount++;
+        }
+
+        private void UnsetBit(int bitNumber)
+        {
+            this[bitNumber] = false;
+            SetBitsCount--;
         }
 
         private bool this[int bitNumber]

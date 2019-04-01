@@ -2,15 +2,15 @@ using System.Collections.Generic;
 
 namespace Jbta.VirtualFileSystem.Impl
 {
-    internal class Allocator
+    internal class BlocksAllocator
     {
         private readonly FileSystemMeta _fileSystemMeta;
-        private readonly BitmapTree _bitmap;
+        private readonly BitmapTree _bitmapTree;
 
-        public Allocator(FileSystemMeta fileSystemMeta, BitmapTree bitmap)
+        public BlocksAllocator(FileSystemMeta fileSystemMeta, BitmapTree bitmapTree)
         {
             _fileSystemMeta = fileSystemMeta;
-            _bitmap = bitmap;
+            _bitmapTree = bitmapTree;
         }
 
         /// <summary>
@@ -33,11 +33,11 @@ namespace Jbta.VirtualFileSystem.Impl
         {
             var blocksNumbers = new int[blocksCount];
 
-            blocksNumbers[0] = _bitmap.SetFirstUnsetBit();
+            blocksNumbers[0] = _bitmapTree.SetFirstUnsetBit();
             for (var i = 1; i < blocksCount; i++)
             {
                 var blockNumber = blocksNumbers[i - 1] + 1;
-                blocksNumbers[i] = _bitmap.TrySetBit(blockNumber) ? blockNumber : _bitmap.SetFirstUnsetBit();
+                blocksNumbers[i] = _bitmapTree.TrySetBit(blockNumber) ? blockNumber : _bitmapTree.SetFirstUnsetBit();
             }
 
             return blocksNumbers;

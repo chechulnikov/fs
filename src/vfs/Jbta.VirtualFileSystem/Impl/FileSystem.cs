@@ -12,6 +12,7 @@ namespace Jbta.VirtualFileSystem.Impl
         private readonly FileSystemMeta _fileSystemMeta;
         private readonly FileCreator _fileCreator;
         private readonly FileOpener _fileOpener;
+        private readonly FileRemover _fileRemover;
         private readonly Unmounter _unmounter;
         private readonly Dictionary<string, IFile> _openedFiles;
         private readonly ReaderWriterLockSlim _locker;
@@ -21,12 +22,14 @@ namespace Jbta.VirtualFileSystem.Impl
             FileSystemMeta fileSystemMeta,
             FileCreator fileCreator,
             FileOpener fileOpener,
+            FileRemover fileRemover,
             Unmounter unmounter)
         {
             VolumePath = volumePath;
             _fileSystemMeta = fileSystemMeta;
             _fileCreator = fileCreator;
             _fileOpener = fileOpener;
+            _fileRemover = fileRemover;
             _unmounter = unmounter;
             _openedFiles = new Dictionary<string, IFile>();
             _locker = new ReaderWriterLockSlim();
@@ -52,11 +55,16 @@ namespace Jbta.VirtualFileSystem.Impl
             return _fileCreator.CreateFile(fileName);
         }
 
-        public void DeleteFile(string fileName)
+        public async Task DeleteFile(string fileName)
         {
             fileName = CheckAndPrepareFileName(fileName);
             
-            throw new System.NotImplementedException();
+            await _fileRemover.Remove(fileName);
+
+            using (_locker.WriterLock())
+            {
+                _openedFiles.Remove(fileName);
+            }
         }
 
         public async Task<IFile> OpenFile(string fileName)
@@ -66,13 +74,15 @@ namespace Jbta.VirtualFileSystem.Impl
             using (_locker.UpgradableReaderLock())
             {
                 if (_openedFiles.TryGetValue(fileName, out var file)) return file;
+                
+                file = await _fileOpener.Open(fileName);
 
                 using (_locker.WriterLock())
                 {
-                    file = await _fileOpener.Open(fileName);
                     _openedFiles.Add(fileName, file);
-                    return file;
                 }
+                
+                return file;
             }
         }
 

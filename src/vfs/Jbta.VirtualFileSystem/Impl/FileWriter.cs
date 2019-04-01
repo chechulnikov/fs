@@ -11,18 +11,18 @@ namespace Jbta.VirtualFileSystem.Impl
     internal class FileWriter
     {
         private readonly FileSystemMeta _fileSystemMeta;
-        private readonly Allocator _allocator;
+        private readonly BlocksAllocator _blocksAllocator;
         private readonly IVolumeReader _volumeReader;
         private readonly IVolumeWriter _volumeWriter;
 
         public FileWriter(
             FileSystemMeta fileSystemMeta,
-            Allocator allocator,
+            BlocksAllocator blocksAllocator,
             IVolumeReader volumeReader,
             IVolumeWriter volumeWriter)
         {
             _fileSystemMeta = fileSystemMeta;
-            _allocator = allocator;
+            _blocksAllocator = blocksAllocator;
             _volumeReader = volumeReader;
             _volumeWriter = volumeWriter;
         }
@@ -71,7 +71,7 @@ namespace Jbta.VirtualFileSystem.Impl
             if (addingBlocksCount > 0)
             {
                 // 2.0. write data blocks
-                var reservedBlocksNumbers = _allocator.AllocateBlocks(addingBlocksCount);
+                var reservedBlocksNumbers = _blocksAllocator.AllocateBlocks(addingBlocksCount);
                 await _volumeWriter.WriteBlocks(data, reservedBlocksNumbers);
                 
                 // add to file meta block
@@ -91,7 +91,7 @@ namespace Jbta.VirtualFileSystem.Impl
                 var blocksNumbersForIndirectPlacement = reservedBlocksNumbers.Skip(freeDirectBlocksCount).ToArray();
                 if (blocksNumbersForIndirectPlacement.Any())
                 {
-                    var reservedIndirectBlocksNumbers = _allocator
+                    var reservedIndirectBlocksNumbers = _blocksAllocator
                         .AllocateBytes(blocksNumbersForIndirectPlacement.Length / sizeof(int));
 
                     var newIndirectBlocks = blocksNumbersForIndirectPlacement.ToByteArray();
