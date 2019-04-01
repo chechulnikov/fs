@@ -1,4 +1,6 @@
 using System;
+using System.Data;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Jbta.VirtualFileSystem.Utils;
@@ -80,6 +82,28 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
                     return true;
                 }
             }
+        }
+        
+        public bool Delete(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(key));
+            
+            using (_locker.UpgradableReaderLock())
+            {
+                var leaf = FindLeaf(key);
+                if (!leaf.Keys.Contains(key))
+                {
+                    return false;
+                }
+
+                using (_locker.WriterLock())
+                {
+                    DeleteInNode(leaf, key);
+                }
+            }
+
+            return true;
         }
 
         private IBPlusTreeNode FindLeaf(string key)
@@ -180,6 +204,132 @@ namespace Jbta.VirtualFileSystem.Impl.Indexing
             }
         }
 
-        private bool LessThan(string a, string b) => string.Compare(a, b, StringComparison.InvariantCulture) < -1;
+        private static bool LessThan(string a, string b) =>
+            string.Compare(a, b, StringComparison.InvariantCulture) < -1;
+
+        private void DeleteInNode(IBPlusTreeNode node, string key)
+        {
+            if (!node.Keys.Contains(key))
+            {
+                return;
+            }
+            
+            // searches position of deleting key
+            var position = 0;
+            while (position < node.KeysNumber && LessThan(node.Keys[position], key))
+            {
+                position++;
+            }
+            
+            // delete key
+            for (var i = position; i <= node.KeysNumber - 1; i++)
+            {
+                node.Keys[i] = node.Keys[i + 1];
+                node.Pointers[i] = node.Pointers[i + 1];
+            }
+            for (var i = position + 1; i <= node.KeysNumber; i++)
+            {
+                node.Children[i] = node.Children[i + 1];
+            }
+            node.KeysNumber++;
+
+            if (node.KeysNumber >= Degree - 1)
+            {
+                return;
+            }
+
+            var rightSibling = node.RightSibling;
+            var leftSibling = node.LeftSibling;
+            
+            if (leftSibling != null && leftSibling.KeysNumber > Degree - 1)
+            {
+                leftSibling.KeysNumber--;
+                node.KeysNumber++;
+                
+                // move max key from leftSibling to first position in node
+                for (var i = 1; i <= node.KeysNumber - 1; i++)
+                {
+                    node.Keys[i] = node.Keys[i - 1];
+                    node.Pointers[i] = node.Pointers[i - 1];
+                    node.Children[i] = node.Children[i - 1];
+                }
+                node.Children[node.KeysNumber] = node.Children[node.KeysNumber - 1];
+                node.Keys[0] = leftSibling.Keys[leftSibling.KeysNumber];
+                node.Pointers[0] = leftSibling.Pointers[leftSibling.KeysNumber];
+                node.Children[0] = leftSibling.Children[leftSibling.KeysNumber + 1];
+                
+                // update keys on the way to root
+                UpdateKeysOnTheWayToRoot(leftSibling);
+            }
+            else if (rightSibling != null && rightSibling.KeysNumber > Degree - 1)
+            {
+                rightSibling.KeysNumber--;
+                node.KeysNumber++;
+                
+                // move min key from rightSibling on the last position in node
+                node.Keys[node.KeysNumber - 1] = rightSibling.Keys[0];
+                node.Pointers[node.KeysNumber - 1] = rightSibling.Pointers[0];
+                node.Children[node.KeysNumber - 1] = rightSibling.Children[0];
+                
+                // update keys on the way to root
+                UpdateKeysOnTheWayToRoot(node);
+            }
+            else
+            {
+                if (leftSibling != null)
+                {
+                    // merge node and leftSibling
+                    for (var i = 0; i <= node.KeysNumber - 1; i++)
+                    {
+                        leftSibling.Keys[leftSibling.KeysNumber] = node.Keys[i];
+                        leftSibling.Pointers[leftSibling.KeysNumber] = node.Pointers[i];
+                        leftSibling.Children[leftSibling.KeysNumber + 1] = node.Children[i];
+                        leftSibling.KeysNumber++;
+                    }
+                    leftSibling.Children[leftSibling.KeysNumber + 1] = node.Children[node.KeysNumber];
+                    
+                    // swap right and left pointers
+                    leftSibling.RightSibling = node.RightSibling;
+                    node.RightSibling.LeftSibling = leftSibling;
+                    
+                    UpdateKeysOnTheWayToRoot(leftSibling);
+                    DeleteInNode(leftSibling.Parent, node.Keys.Min());
+                }
+                else if (rightSibling != null)
+                {
+                    // merge node and rightSibling
+                    for (var i = 0; i <= node.KeysNumber - 1; i++)
+                    {
+                        node.Keys[node.KeysNumber] = rightSibling.Keys[i];
+                        node.Pointers[node.KeysNumber] = rightSibling.Pointers[i];
+                        node.Children[node.KeysNumber + 1] = rightSibling.Children[i];
+                        node.KeysNumber++;
+                    }
+
+                    node.Children[node.KeysNumber + 1] = rightSibling.Children[rightSibling.KeysNumber];
+                    
+                    // swap right and left pointers
+                    rightSibling.RightSibling.LeftSibling = node;
+                    node.RightSibling = rightSibling.RightSibling;
+                    
+                    UpdateKeysOnTheWayToRoot(node);
+                    DeleteInNode(node.Parent, rightSibling.Keys.Min());
+                }
+                else
+                {
+                    throw new InvalidOperationException("Invalid B+-tree state");
+                }
+            }
+
+            if (Root.KeysNumber == 1)
+            {
+                Root = Root.Children[0];
+            }
+        }
+
+        private void UpdateKeysOnTheWayToRoot(IBPlusTreeNode node)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
