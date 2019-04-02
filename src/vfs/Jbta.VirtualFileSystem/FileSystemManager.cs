@@ -51,7 +51,14 @@ namespace Jbta.VirtualFileSystem
         /// Initialize new file system in volume by given file path
         /// </summary>
         /// <param name="volumePath">File path to file where will created new file system</param>
-        public static Task Init(string volumePath) => Task.FromResult(_instance._initializer.Initialize(volumePath));
+        public static Task Init(string volumePath)
+        {
+            volumePath = volumePath?.Trim();
+            if (string.IsNullOrWhiteSpace(volumePath))
+                throw new ArgumentException("Volume path cannot be null or whitespace", nameof(volumePath));
+
+            return _instance._initializer.Initialize(volumePath).AsTask();
+        }
 
         /// <summary>
         /// Mounts existed file system to current process
@@ -61,6 +68,7 @@ namespace Jbta.VirtualFileSystem
         /// <exception cref="ArgumentException">File path should be valid</exception>
         public static IFileSystem Mount(string volumePath)
         {
+            volumePath = volumePath?.Trim();
             if (!System.IO.File.Exists(volumePath))
                 throw new ArgumentException($"File not found by path {volumePath}");
 
@@ -81,17 +89,18 @@ namespace Jbta.VirtualFileSystem
         /// Unmount already mounted file system from process.
         /// If file system isn't mounted nothing will happened
         /// </summary>
-        /// <param name="fileSystem">An object, that represents a file system</param>
+        /// <param name="volumePath">Path to file with valid volume</param>
         /// <exception cref="ArgumentNullException">fileSystem object is null</exception>
-        public static void Unmount(IFileSystem fileSystem)
+        public static void Unmount(string volumePath)
         {
-            if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
+            if (!System.IO.File.Exists(volumePath))
+                throw new ArgumentException($"File not found by path {volumePath}");
             
-            if (!_instance._mountedFileSystems.ContainsKey(fileSystem.VolumePath)) return;
+            if (!_instance._mountedFileSystems.ContainsKey(volumePath)) return;
             lock (Locker)
             {
-                if (!_instance._mountedFileSystems.ContainsKey(fileSystem.VolumePath)) return;
-                if (_instance._mountedFileSystems.Remove(fileSystem.VolumePath, out var fs)) fs.Dispose();
+                if (!_instance._mountedFileSystems.ContainsKey(volumePath)) return;
+                if (_instance._mountedFileSystems.Remove(volumePath, out var fs)) fs.Dispose();
             }
         }
     }

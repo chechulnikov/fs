@@ -51,7 +51,8 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
 
             using (var stream = System.IO.File.OpenWrite(VolumePath))
             {
-                await stream.WriteAsync(data, blockNumber * _blockSize, _blockSize);
+                stream.Seek(blockNumber * _blockSize, SeekOrigin.Begin);
+                await stream.WriteAsync(data);
             }
         }
 
@@ -64,20 +65,23 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
             {
                 var startBlockNumberInChunk = blocksNumbers[0];
                 var blocksCountInChunk = 1;
-
+                var bufferOffset = 0;
                 for (var i = 1; i < blocksNumbers.Count; i++)
                 {
-                    if (blocksNumbers[i - 1] + 1 == blocksNumbers[i])
+                    if (blocksNumbers[i - 1] + 1 == blocksNumbers[i] && i != blocksNumbers.Count - 1)
                     {
                         blocksCountInChunk++;
                         continue;
                     }
 
+                    var bytesInChunk = blocksCountInChunk * _blockSize;
                     stream.Seek(startBlockNumberInChunk * _blockSize, SeekOrigin.Begin);
-                    await stream.WriteAsync(data, startBlockNumberInChunk * _blockSize, blocksCountInChunk * _blockSize);
+                    await stream.WriteAsync(data, bufferOffset, bytesInChunk);
 
                     startBlockNumberInChunk = blocksNumbers[i];
                     blocksCountInChunk = 1;
+                    
+                    bufferOffset += bytesInChunk;
                 }
             }
         }

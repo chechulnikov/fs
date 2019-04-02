@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal.FileOperations;
 using Jbta.VirtualFileSystem.Internal.Mounting;
 using Jbta.VirtualFileSystem.Utils;
@@ -51,12 +52,14 @@ namespace Jbta.VirtualFileSystem.Internal
 
         public Task<IFile> CreateFile(string fileName)
         {
+            CheckFileSystemState();
             fileName = CheckAndPrepareFileName(fileName);
             return _fileCreator.CreateFile(fileName);
         }
 
         public async Task DeleteFile(string fileName)
         {
+            CheckFileSystemState();
             fileName = CheckAndPrepareFileName(fileName);
             
             await _fileRemover.Remove(fileName);
@@ -68,6 +71,7 @@ namespace Jbta.VirtualFileSystem.Internal
 
         public async Task<IFile> OpenFile(string fileName)
         {
+            CheckFileSystemState();
             fileName = CheckAndPrepareFileName(fileName);
             
             using (_locker.UpgradableReaderLock())
@@ -86,6 +90,7 @@ namespace Jbta.VirtualFileSystem.Internal
 
         public bool CloseFile(IFile file)
         {
+            CheckFileSystemState();
             if (file == null) throw new ArgumentNullException(nameof(file));
             
             using (_locker.UpgradableReaderLock())
@@ -109,6 +114,14 @@ namespace Jbta.VirtualFileSystem.Internal
                 throw new ArgumentException("Invalid file name");
 
             return fileName;
+        }
+
+        private void CheckFileSystemState()
+        {
+            if (!IsMounted)
+            {
+                throw new FileSystemException("File system isn't mounted");
+            }
         }
 
         public void Dispose()

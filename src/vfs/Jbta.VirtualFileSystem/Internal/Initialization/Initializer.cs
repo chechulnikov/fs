@@ -24,7 +24,7 @@ namespace Jbta.VirtualFileSystem.Internal.Initialization
         {
             var superblock = CreateSuperblock();
             var bitmap = CreateBitmap();
-            var rootIndexBlock = new IndexBlock { IsLeaf = true };
+            var rootIndexBlock = new IndexBlock();
             return CreateVolume(volumePath, superblock, bitmap, rootIndexBlock);
         }
 
@@ -32,13 +32,14 @@ namespace Jbta.VirtualFileSystem.Internal.Initialization
         {
             MagicNumber = GlobalConstant.SuperblockMagicNumber,
             BlockSize = GlobalConstant.BlockSize,
-            IsDirty = false
+            IsDirty = false,
+            RootIndexBlockNumber = GlobalConstant.BlockSize * GlobalConstant.BitmapBlocksCount + 1
         };
 
         private static BitArray CreateBitmap()
         {
             var bitArray = new BitArray(8 * GlobalConstant.BlockSize * GlobalConstant.BitmapBlocksCount);
-            foreach (var i in Enumerable.Range(0, GlobalConstant.BitmapBlocksCount))
+            foreach (var i in Enumerable.Range(0, GlobalConstant.BitmapBlocksCount + 2))
             {
                 bitArray.Set(i, true);
             }
@@ -49,9 +50,9 @@ namespace Jbta.VirtualFileSystem.Internal.Initialization
             string volumePath, Superblock superblock, BitArray bitmap, IndexBlock indexBlock)
         {
             var volume = new Volume(volumePath, GlobalConstant.BlockSize);
-            await volume.WriteBlocks(_superblockSerializer.Serialize(superblock), Enumerable.Range(0, 1).ToArray());
+            await volume.WriteBlock(_superblockSerializer.Serialize(superblock), 0);
             await volume.WriteBlocks(bitmap.ToByteArray(), Enumerable.Range(1, GlobalConstant.BitmapBlocksCount).ToArray());
-            await volume.WriteBlocks(_indexBlockSerializer.Serialize(indexBlock), Enumerable.Range(GlobalConstant.BitmapBlocksCount,1).ToArray());
+            await volume.WriteBlock(_indexBlockSerializer.Serialize(indexBlock), GlobalConstant.BitmapBlocksCount + 1);
         }
     }
 }
