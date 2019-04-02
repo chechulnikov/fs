@@ -104,14 +104,14 @@ var fileSystem = FileSystemManager.Mount("./foo.dat");
 
 ##### Размонтирование файловой системы
 ``` C#
-static void Unmount(IFileSystem fileSystem)
+static void Unmount(string volumePath)
 ```
 
 ###### Пример
 ``` C#
-FileSystemManager.Unmount(fileSystem);
+FileSystemManager.Unmount("./foo.dat");
 ```
-Процесс размонтирования состоит в удалении файловой системы из списка примонтированных файловых систем, `IsDirty`ставится в положение `false`, а также ФС удаляется из памяти.
+Процесс размонтирования состоит в удалении файловой системы из списка примонтированных файловых систем, `IsDirty`ставится в положение `false`. Объект ФС становится непригодным для использования и доступным для сборки мусора.
 
 #### Объект типа `IFileSystem`
 
