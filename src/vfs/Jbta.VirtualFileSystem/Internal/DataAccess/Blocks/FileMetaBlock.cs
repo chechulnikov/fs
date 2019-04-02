@@ -1,4 +1,4 @@
-namespace Jbta.VirtualFileSystem.Internal.Blocks
+namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks
 {
     /// <summary>
     /// File meta block structure (aka inode)

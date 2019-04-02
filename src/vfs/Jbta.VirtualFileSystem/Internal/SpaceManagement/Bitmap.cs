@@ -73,6 +73,25 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
                 }
             }
         }
+        
+        /// <summary>
+        /// Tries to unset given bit
+        /// </summary>
+        /// <param name="bitNumber">Number of bit</param>
+        /// <returns>True, if bit was successfully unset</returns>
+        public async Task<bool> TryUnsetBit(int bitNumber)
+        {
+            using (_locker.UpgradableReaderLock())
+            {
+                if (!_bitmapTree[bitNumber]) return false;
+                using (_locker.WriterLock())
+                {
+                    if (!_bitmapTree.TryUnsetBit(bitNumber)) return false;
+                    await SaveBitmapModifications(new[] {bitNumber});
+                    return true;
+                }
+            }
+        }
 
         /// <summary>
         /// Unset given bits

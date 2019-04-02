@@ -4,6 +4,9 @@ using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
 {
+    /// <summary>
+    /// Finds free blocks
+    /// </summary>
     internal class BlocksAllocator
     {
         private readonly FileSystemMeta _fileSystemMeta;
@@ -25,7 +28,12 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             var blocksCount = bytesCount.DivideWithUpRounding(_fileSystemMeta.BlockSize);
             return AllocateBlocks(blocksCount);
         }
-        
+
+        /// <summary>
+        /// Allocates one blocks of bytes
+        /// </summary>
+        public ValueTask<int> AllocateBlock() => _bitmap.SetFirstUnsetBit();
+
         /// <summary>
         /// Allocates blocks of bytes by given blocks count
         /// </summary>

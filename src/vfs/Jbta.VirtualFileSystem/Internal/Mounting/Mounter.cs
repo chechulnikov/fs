@@ -3,8 +3,8 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
-using Jbta.VirtualFileSystem.Internal.Blocks;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
+using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.Mounting
@@ -12,10 +12,14 @@ namespace Jbta.VirtualFileSystem.Internal.Mounting
     internal class Mounter
     {
         private readonly IBinarySerializer<Superblock> _superblockSerializer;
-        
-        public Mounter(IBinarySerializer<Superblock> superblockSerializer)
+        private readonly IBinarySerializer<IndexBlock> _indexBlockSerializer;
+
+        public Mounter(
+            IBinarySerializer<Superblock> superblockSerializer,
+            IBinarySerializer<IndexBlock> indexBlockSerializer)
         {
             _superblockSerializer = superblockSerializer;
+            _indexBlockSerializer = indexBlockSerializer;
         }
         
         public async Task<IFileSystem> Mount(string volumePath)
@@ -27,8 +31,8 @@ namespace Jbta.VirtualFileSystem.Internal.Mounting
 
             await MarkFileSystemAsDirty(volume, superblock);
 
-            var bitmapBlocks = await ReadBitmapBlocks(volume);
-            var rootIndexBlock = await ReadRootIndexBlock(volume, superblock.RootIndexBlockNumber);
+            var bitmapBlocks = await volume.ReadBlocks(1, GlobalConstant.BitmapBlocksCount);
+            var rootIndexBlock = await ReadRootIndexBlock(volume, superblock);
             
             return FileSystemFactory.New(volume, superblock, bitmapBlocks, rootIndexBlock);
         }
@@ -59,28 +63,24 @@ namespace Jbta.VirtualFileSystem.Internal.Mounting
 
             return blockSize;
         }
-        
-        private static async ValueTask<Superblock> ReadSuperblock(Volume volume)
+
+        private static async ValueTask<Superblock> ReadSuperblock(IVolumeReader volume)
         {
             var superblockData = await volume.ReadBlocks(0, 1);
             using (var ms = new MemoryStream(superblockData))
                 return (Superblock) new BinaryFormatter().Deserialize(ms);
         }
 
+        private async Task<IndexBlock> ReadRootIndexBlock(Volume volume, Superblock superblock)
+        {
+            var blockData = await volume.ReadBlocks(superblock.RootIndexBlockNumber);
+            return _indexBlockSerializer.Deserialize(blockData);
+        }
+
         private ValueTask MarkFileSystemAsDirty(IVolumeWriter volume, Superblock superblock)
         {
             superblock.IsDirty = !superblock.IsDirty;
             return volume.WriteBlocks(_superblockSerializer.Serialize(superblock), new[] {0});
-        }
-
-        private static ValueTask<byte[]> ReadBitmapBlocks(IVolumeReader volume)
-        {
-            return volume.ReadBlocks(1, GlobalConstant.BitmapBlocksCount);
-        }
-
-        private static ValueTask<byte[]> ReadRootIndexBlock(IVolumeReader volume, int rootIndexBlockNumber)
-        {
-            return volume.ReadBlocks(rootIndexBlockNumber, 1);
         }
     }
 }

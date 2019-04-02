@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text;
 using Jbta.VirtualFileSystem.Utils;
 
-namespace Jbta.VirtualFileSystem.Internal.Blocks.Serialization
+namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks.Serialization
 {
     internal class IndexBlockSerializer : IBinarySerializer<IndexBlock>
     {
@@ -19,8 +19,6 @@ namespace Jbta.VirtualFileSystem.Internal.Blocks.Serialization
             var result = new byte[_blockSize];
             
             var offset = 0;
-            BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), block.BlockNumber);
-            offset += sizeof(int);
             BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(bool)), block.IsLeaf);
             offset += sizeof(bool);
             BitConverter.TryWriteBytes(new Span<byte>(result, offset, sizeof(int)), block.ParentBlockNumber);
@@ -55,11 +53,9 @@ namespace Jbta.VirtualFileSystem.Internal.Blocks.Serialization
             var result = new IndexBlock();
 
             var offset = 0;
-            result.BlockNumber = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
             result.IsLeaf = BitConverter.ToBoolean(data, offset);
             offset += sizeof(bool);
-            result.Parent.BlockNumber = BitConverter.ToInt32(data, offset);
+            result.ParentBlockNumber = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
             result.LeftSiblingBlockNumber = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);

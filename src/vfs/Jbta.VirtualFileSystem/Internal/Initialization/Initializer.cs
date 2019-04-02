@@ -1,9 +1,8 @@
 using System.Collections;
 using System.Linq;
 using System.Threading.Tasks;
-using Jbta.VirtualFileSystem.Internal.Blocks;
-using Jbta.VirtualFileSystem.Internal.Blocks.Serialization;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
+using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.Initialization
@@ -25,7 +24,7 @@ namespace Jbta.VirtualFileSystem.Internal.Initialization
         {
             var superblock = CreateSuperblock();
             var bitmap = CreateBitmap();
-            var rootIndexBlock = new IndexBlock();
+            var rootIndexBlock = new IndexBlock { IsLeaf = true };
             return CreateVolume(volumePath, superblock, bitmap, rootIndexBlock);
         }
 

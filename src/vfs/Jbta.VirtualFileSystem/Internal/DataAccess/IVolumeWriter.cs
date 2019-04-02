@@ -5,7 +5,7 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
 {
     internal interface IVolumeWriter
     {
-        ValueTask WriteBlocksСontiguously(byte[] data, int startBlockNumber, int blocksCount);
+        ValueTask WriteBlock(byte[] data, int blockNumber);
         
         ValueTask WriteBlocks(byte[] data, IReadOnlyList<int> blocksNumbers);
     }

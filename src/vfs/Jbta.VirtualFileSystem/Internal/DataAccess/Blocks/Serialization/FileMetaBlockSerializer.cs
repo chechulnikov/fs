@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using Jbta.VirtualFileSystem.Utils;
 
-namespace Jbta.VirtualFileSystem.Internal.Blocks.Serialization
+namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks.Serialization
 {
     internal class FileMetaBlockSerializer : IBinarySerializer<FileMetaBlock>
     {

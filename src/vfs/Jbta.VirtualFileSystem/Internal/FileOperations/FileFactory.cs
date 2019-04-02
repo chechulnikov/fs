@@ -1,4 +1,4 @@
-using Jbta.VirtualFileSystem.Internal.Blocks;
+using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 
 namespace Jbta.VirtualFileSystem.Internal.FileOperations
 {

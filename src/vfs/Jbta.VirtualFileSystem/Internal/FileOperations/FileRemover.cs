@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
-using Jbta.VirtualFileSystem.Internal.Blocks;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
+using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 using Jbta.VirtualFileSystem.Internal.Indexing;
 using Jbta.VirtualFileSystem.Internal.SpaceManagement;
 using Jbta.VirtualFileSystem.Utils;
@@ -31,7 +31,7 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
 
         public async Task Remove(string fileName)
         {
-            var (fileMetaBlockNumber, hasBeenFound) = _fileSystemIndex.Search(fileName);
+            var (fileMetaBlockNumber, hasBeenFound) = _fileSystemIndex.SearchFile(fileName);
             if (!hasBeenFound)
             {
                 throw new FileSystemException($"File \"{fileName}\" not found");
@@ -39,6 +39,11 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             
             var fileBlocksNumbers = await LoadAllBLocksNumbers(fileMetaBlockNumber);
             await _blocksDeallocator.DeallocateBlocks(fileBlocksNumbers);
+
+            if (!await _fileSystemIndex.RemoveFile(fileName))
+            {
+                throw new FileSystemException($"Can not remove file \"{fileName}\" from file system index");
+            }
         }
 
         private async Task<FileMetaBlock> LoadFileMetaBlock(int fileMetaBlockNumber)
@@ -65,6 +70,5 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             
             return result;
         }
-        
     }
 }

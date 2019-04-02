@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Internal;
-using Jbta.VirtualFileSystem.Internal.Blocks.Serialization;
+using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks.Serialization;
 using Jbta.VirtualFileSystem.Internal.Initialization;
 using Jbta.VirtualFileSystem.Internal.Mounting;
 
@@ -35,7 +35,7 @@ namespace Jbta.VirtualFileSystem
             _mountedFileSystems = new Dictionary<string, IFileSystem>();
             var superblockSerializer = new SuperblockSerializer(GlobalConstant.BlockSize);
             var indexBlockSerializer = new IndexBlockSerializer(GlobalConstant.BlockSize);
-            _mounter = new Mounter(superblockSerializer);
+            _mounter = new Mounter(superblockSerializer, indexBlockSerializer);
             _initializer = new Initializer(superblockSerializer, indexBlockSerializer);
         }
 

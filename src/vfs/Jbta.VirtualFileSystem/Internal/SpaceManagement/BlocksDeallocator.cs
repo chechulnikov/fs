@@ -1,10 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
 {
+    /// <summary>
+    /// Frees up using blocks
+    /// </summary>
     internal class BlocksDeallocator
     {
         private const int BatchSize = 4096;
@@ -14,6 +18,8 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         {
             _bitmap = bitmap;
         }
+        
+        public Task DeallocateBlock(int blockNumber) => _bitmap.TryUnsetBit(blockNumber);
 
         public async Task DeallocateBlocks(IReadOnlyList<int> blocksNumbers)
         {

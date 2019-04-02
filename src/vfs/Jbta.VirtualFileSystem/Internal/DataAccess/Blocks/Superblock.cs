@@ -1,4 +1,4 @@
-﻿namespace Jbta.VirtualFileSystem.Internal.Blocks
+﻿namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks
 {
     public class Superblock
     {

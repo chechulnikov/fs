@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
-using Jbta.VirtualFileSystem.Internal.Blocks;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
+using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 using Jbta.VirtualFileSystem.Internal.Indexing;
 using Jbta.VirtualFileSystem.Internal.SpaceManagement;
 using Jbta.VirtualFileSystem.Utils;
@@ -37,15 +37,22 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
                 throw new FileSystemException($"File name cannot be greater then {GlobalConstant.MaxFileNameSize} symbols");
             }
 
-            if (_fileSystemIndex.Exists(fileName))
+            if (_fileSystemIndex.FileExists(fileName))
             {
                 throw new FileSystemException($"File \"{fileName}\" has already existed");
             }
             
             var fileMetaBlock = new FileMetaBlock();
-            var reservedBlocksNumbers = await _blocksAllocator.AllocateBlocks(1);
+            
+            var fileMetaBlockNumber = await _blocksAllocator.AllocateBlock();
             var fileMetaBlockData = _fileMetaBlockSerializer.Serialize(fileMetaBlock);
-            await _volumeWriter.WriteBlocks(fileMetaBlockData, reservedBlocksNumbers);
+            await _volumeWriter.WriteBlock(fileMetaBlockData, fileMetaBlockNumber);
+
+            if (!await _fileSystemIndex.Insert(fileName, fileMetaBlockNumber))
+            {
+                throw new FileSystemException($"Can not insert file \"{fileName}\" to file system index");
+            }
+            
             return _fileFactory.New(fileMetaBlock, fileName);
         } 
     }

@@ -1,9 +1,10 @@
 using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Utils;
 
-namespace Jbta.VirtualFileSystem.Internal.Indexing
+namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 {
     /// <summary>
     /// B+-tree
@@ -11,12 +12,12 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
     /// </summary>
     internal class BPlusTree
     {
-        private readonly BPlusTreeNodesFactory _nodesFactory;
+        private readonly BPlusTreeNodesPersistenceManager _nodesPersistenceManager;
         private readonly ReaderWriterLockSlim _locker;
         
-        public BPlusTree(BPlusTreeNodesFactory nodesFactory, IBPlusTreeNode root)
+        public BPlusTree(BPlusTreeNodesPersistenceManager nodesPersistenceManager, IBPlusTreeNode root)
         {
-            _nodesFactory = nodesFactory;
+            _nodesPersistenceManager = nodesPersistenceManager;
             _locker = new ReaderWriterLockSlim();
             Degree = GlobalConstant.BPlusTreeDegree;
             Root = root;
@@ -40,7 +41,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
             }
         }
 
-        public bool Insert(string key, int value)
+        public async Task<bool> Insert(string key, int value)
         {
             if (string.IsNullOrEmpty(key)) throw new ArgumentException("Value cannot be null or empty.", nameof(key));
             if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value));
@@ -65,6 +66,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
                     // key inserting
                     for (var i = leaf.KeysNumber; i >= position + 1; i--)
                     {
+                        // todo !!!
                         leaf.Keys[i] = leaf.Keys[i - 1];
                         leaf.Pointers[i] = leaf.Pointers[i - 1];
                     }
@@ -74,15 +76,17 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
 
                     if (leaf.KeysNumber == 2 * Degree)
                     {
-                        Split(leaf);
+                        await Split(leaf);
                     }
+
+                    await _nodesPersistenceManager.SaveNode(leaf);
 
                     return true;
                 }
             }
         }
         
-        public bool Delete(string key)
+        public async Task<bool> Delete(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(key));
@@ -97,7 +101,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
 
                 using (_locker.WriterLock())
                 {
-                    DeleteInNode(leaf, key);
+                    await DeleteInNode(leaf, key);
                 }
             }
 
@@ -121,9 +125,9 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
             return current;
         }
 
-        private void Split(IBPlusTreeNode node)
+        private async Task Split(IBPlusTreeNode node)
         {
-            var newNode = _nodesFactory.New();
+            var newNode = await _nodesPersistenceManager.CreateNewNode();
             
             // switch right and left siblings pointers
             newNode.RightSibling = node.RightSibling;
@@ -161,10 +165,10 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
             if (node == Root)
             {
                 // create new Root node
-                Root = _nodesFactory.New();
+                Root = await _nodesPersistenceManager.CreateNewNode();
                 Root.Keys[0] = midKey;
                 Root.Children[0] = node;
-                Root.Children[1] = _nodesFactory.New();
+                Root.Children[1] = await _nodesPersistenceManager.CreateNewNode();
                 Root.KeysNumber = 1;
                 node.Parent = Root;
                 newNode.Parent = Root;
@@ -197,15 +201,15 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
 
                 if (parent.KeysNumber == 2 * Degree)
                 {
-                    Split(parent);
+                    await Split(parent);
                 }
             }
         }
 
         private static bool LessThan(string a, string b) =>
-            string.Compare(a, b, StringComparison.InvariantCulture) < -1;
+            string.Compare(a, b, StringComparison.InvariantCulture) < 0;
 
-        private void DeleteInNode(IBPlusTreeNode node, string key)
+        private async Task DeleteInNode(IBPlusTreeNode node, string key)
         {
             if (!node.Keys.Contains(key))
             {
@@ -291,7 +295,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
                     node.RightSibling.LeftSibling = leftSibling;
                     
                     UpdateKeysOnTheWayToRoot(leftSibling, key);
-                    DeleteInNode(leftSibling.Parent, node.Keys.Min());
+                    await DeleteInNode(leftSibling.Parent, node.Keys.Min());
                 }
                 else if (rightSibling != null)
                 {
@@ -311,7 +315,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
                     node.RightSibling = rightSibling.RightSibling;
                     
                     UpdateKeysOnTheWayToRoot(node, key);
-                    DeleteInNode(node.Parent, rightSibling.Keys.Min());
+                    await DeleteInNode(node.Parent, rightSibling.Keys.Min());
                 }
                 else
                 {

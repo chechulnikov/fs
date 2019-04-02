@@ -43,19 +43,18 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
             }
             return buffer;
         }
-        
-        public async ValueTask WriteBlocksСontiguously(byte[] data, int startBlockNumber, int blocksCount)
+
+        public async ValueTask WriteBlock(byte[] data, int blockNumber)
         {
-            if (startBlockNumber < 0) throw new ArgumentOutOfRangeException(nameof(startBlockNumber));
-            if (blocksCount <= 0) throw new ArgumentOutOfRangeException(nameof(blocksCount));
-            
+            if (data.Length % _blockSize != 0)
+                throw new FileSystemException("Invalid data size");
+
             using (var stream = System.IO.File.OpenWrite(VolumePath))
             {
-                stream.Seek(startBlockNumber * _blockSize, SeekOrigin.Begin);
-                await stream.WriteAsync(data, startBlockNumber * _blockSize, blocksCount * _blockSize);
+                await stream.WriteAsync(data, blockNumber * _blockSize, _blockSize);
             }
         }
-        
+
         public async ValueTask WriteBlocks(byte[] data, IReadOnlyList<int> blocksNumbers)
         {
             if (data.Length % _blockSize != 0)

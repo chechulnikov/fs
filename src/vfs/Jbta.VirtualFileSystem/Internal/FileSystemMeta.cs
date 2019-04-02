@@ -17,7 +17,5 @@ namespace Jbta.VirtualFileSystem.Internal
         public int BlocksCount => GlobalConstant.BitmapBlocksCount * BlockSize * 8;
 
         public int UsedBlocksCount => _bitmap.SetBitsCount;
-
-        public int UnusedBlocksCount => BlocksCount - UsedBlocksCount;
     }
 }

@@ -44,6 +44,13 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
            SetBit(bitNumber);
            return true;
         }
+        
+        public bool TryUnsetBit(int bitNumber)
+        {
+            if (!this[bitNumber]) return false;
+            UnsetBit(bitNumber);
+            return true;
+        }
 
         public void UnsetBits(IEnumerable<int> bitNumbers)
         {
@@ -52,7 +59,7 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
                 UnsetBit(bitNumber);
             }
         }
-        
+
         public byte[] GetBitmapBlocksSnapshotsByNumbers(IEnumerable<int> bitNumbers)
         {
             var bitsInBlock = _blockSize * 8;

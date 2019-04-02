@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
-using Jbta.VirtualFileSystem.Internal.Blocks;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
+using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 using Jbta.VirtualFileSystem.Internal.Indexing;
 using Jbta.VirtualFileSystem.Utils;
 
@@ -28,7 +28,7 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
 
         public async Task<IFile> Open(string fileName)
         {
-            var (fileMetaBlockNumber, hasBeenFound) = _fileSystemIndex.Search(fileName);
+            var (fileMetaBlockNumber, hasBeenFound) = _fileSystemIndex.SearchFile(fileName);
             if (!hasBeenFound)
             {
                 throw new FileSystemException($"File \"{fileName}\" not found");
