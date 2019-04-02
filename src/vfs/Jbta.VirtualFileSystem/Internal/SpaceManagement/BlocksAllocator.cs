@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
 {
@@ -21,7 +22,7 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         /// <returns>Allocated blocks numbers</returns>
         public ValueTask<IReadOnlyList<int>> AllocateBytes(int bytesCount)
         {
-            var blocksCount = CalcBlocksCount(bytesCount);
+            var blocksCount = bytesCount.DivideWithUpRounding(_fileSystemMeta.BlockSize);
             return AllocateBlocks(blocksCount);
         }
         
@@ -42,12 +43,6 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             }
 
             return blocksNumbers;
-        }
-
-        private int CalcBlocksCount(int bytesCount)
-        {
-            var blocksCount = bytesCount / _fileSystemMeta.BlockSize;
-            return bytesCount % _fileSystemMeta.BlockSize == 0 ? blocksCount : blocksCount + 1;
         }
     }
 }

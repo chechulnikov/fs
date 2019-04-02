@@ -25,7 +25,9 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             get
             {
                 using (_locker.ReaderLock())
+                {
                     return _bitmapTree.SetBitsCount;
+                }
             }
         }
 
@@ -60,12 +62,15 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         /// <returns>True, if bit was successfully set</returns>
         public async Task<bool> TrySetBit(int bitNumber)
         {
-            if (_bitmapTree[bitNumber]) return false;
-            using (_locker.WriterLock())
+            using (_locker.UpgradableReaderLock())
             {
-                if (!_bitmapTree.TrySetBit(bitNumber)) return false;
-                await SaveBitmapModifications(new[] {bitNumber});
-                return true;
+                if (_bitmapTree[bitNumber]) return false;
+                using (_locker.WriterLock())
+                {
+                    if (!_bitmapTree.TrySetBit(bitNumber)) return false;
+                    await SaveBitmapModifications(new[] {bitNumber});
+                    return true;
+                }
             }
         }
 
@@ -83,7 +88,7 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
 
         private async Task SaveBitmapModifications(IReadOnlyList<int> bitNumbers)
         {
-            var modifiedBitmapBlocksSnapshot = _bitmapTree.GetBitmapBlocksByNumbers(bitNumbers);
+            var modifiedBitmapBlocksSnapshot = _bitmapTree.GetBitmapBlocksSnapshotsByNumbers(bitNumbers);
             await _volumeWriter.WriteBlocks(modifiedBitmapBlocksSnapshot, bitNumbers);
         }
         

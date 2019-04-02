@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Utils;
 
@@ -14,11 +15,13 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
     /// </summary>
     internal class BitmapTree
     {
+        private readonly int _blockSize;
         private readonly int _dataLength;
         private readonly BitArray _tree;
 
-        public BitmapTree(byte[] data)
+        public BitmapTree(int blockSize, byte[] data)
         {
+            _blockSize = blockSize;
             var bitmapData = new BitArray(data);
             
             _dataLength = bitmapData.Length;
@@ -50,25 +53,33 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             }
         }
         
-        public byte[] GetBitmapBlocksByNumbers(IReadOnlyList<int> bitNumbers)
+        public byte[] GetBitmapBlocksSnapshotsByNumbers(IEnumerable<int> bitNumbers)
         {
-            var bytes = new byte[bitNumbers.Count * _dataLength];
+            var bitsInBlock = _blockSize * 8;
+            var booleansBuffer = new bool[8];
+
+            var bitmapBlocksNumbers = bitNumbers.Select(bm => bm.DivideWithUpRounding(_blockSize)).ToArray();
             
-            var bitCount = _dataLength;
-            var booleans = new bool[8];
+            var result = new byte[bitmapBlocksNumbers.Length * _blockSize];
             
-            for (var k = 0; k < bitNumbers.Count; k++)
+            for (var k = 0; k < bitmapBlocksNumbers.Length; k++)
             {
-                var bitmapBlockNumber = bitNumbers[k].DivideWithUpRounding(_dataLength * 8);
-                for (int i = bitCount, j = 0; i < 2 * bitCount; i += 8, j++)
+                var bitmapBlockNumber = bitmapBlocksNumbers[k];
+                
+                // extract bitmap block byte by byte
+                for (int i = bitsInBlock, j = 0; i < 2 * bitsInBlock; i += 8, j++)
                 {
+                    // 8 booleans values equals 1 byte
                     for (var m = 0; m < 8; m++)
-                        booleans[m] = _tree[bitmapBlockNumber + i + m];
-                    bytes[k * bitCount + j] = booleans.ToByte();
+                    {
+                        booleansBuffer[m] = _tree[bitmapBlockNumber + i + m];
+                    }
+                    
+                    result[k * _blockSize + j] = booleansBuffer.ToByte();
                 }
             }
 
-            return bytes;
+            return result;
         }
 
         public bool this[int bitNumber]
@@ -111,9 +122,9 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         {
             var unsetBitsCount = 0;
             for (var i = _dataLength; i < _tree.Count; i++)
-                if (_tree[i])
-                    unsetBitsCount++;
-                    
+            {
+                if (_tree[i]) unsetBitsCount++;
+            }
             return unsetBitsCount;
         }
 

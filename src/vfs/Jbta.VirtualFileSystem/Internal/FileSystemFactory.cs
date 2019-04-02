@@ -12,7 +12,7 @@ namespace Jbta.VirtualFileSystem.Internal
     {
         public static IFileSystem New(Volume volume, Superblock superblock, byte[] bitmapBlocks, byte[] rootIndexBlock)
         {
-            var bitmapTree = new BitmapTree(bitmapBlocks);
+            var bitmapTree = new BitmapTree(superblock.BlockSize, bitmapBlocks);
             var bitmap = new Bitmap(bitmapTree, volume);
             var fileSystemMeta = new FileSystemMeta(superblock.BlockSize, bitmap);
             var superblockSerializer = new SuperblockSerializer(fileSystemMeta.BlockSize);
