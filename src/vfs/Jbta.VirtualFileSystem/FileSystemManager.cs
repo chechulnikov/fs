@@ -8,6 +8,9 @@ using Jbta.VirtualFileSystem.Internal.Mounting;
 
 namespace Jbta.VirtualFileSystem
 {
+    /// <summary>
+    /// This is static API, that provides a possibilities to create, mount and unmount file systems
+    /// </summary>
     public class FileSystemManager
     {
         private static readonly object Locker;
@@ -39,17 +42,23 @@ namespace Jbta.VirtualFileSystem
             _initializer = new Initializer(superblockSerializer, indexBlockSerializer);
         }
 
+        /// <summary>
+        /// List of mounted file systems
+        /// </summary>
         public static IReadOnlyDictionary<string, IFileSystem> MountedFileSystems => _instance._mountedFileSystems;
 
-        public static Task Init(string volumePath)
-        {
-            if (!System.IO.File.Exists(volumePath))
-                throw new ArgumentException($"File not found by path {volumePath}");
-            
-            return Task.FromResult(_instance._initializer.Initialize(volumePath));
-        }
+        /// <summary>
+        /// Initialize new file system in volume by given file path
+        /// </summary>
+        /// <param name="volumePath">File path to file where will created new file system</param>
+        public static Task Init(string volumePath) => Task.FromResult(_instance._initializer.Initialize(volumePath));
 
-        // TODO to async?
+        /// <summary>
+        /// Mounts existed file system to current process
+        /// </summary>
+        /// <param name="volumePath">Path to file with valid volume</param>
+        /// <returns>An object, that represents a file system</returns>
+        /// <exception cref="ArgumentException">File path should be valid</exception>
         public static IFileSystem Mount(string volumePath)
         {
             if (!System.IO.File.Exists(volumePath))
@@ -62,12 +71,18 @@ namespace Jbta.VirtualFileSystem
                 if (_instance._mountedFileSystems.ContainsKey(volumePath))
                     return _instance._mountedFileSystems[volumePath];
                 
-                var fileSystem = _instance._mounter.Mount(volumePath).Result;
+                var fileSystem = _instance._mounter.Mount(volumePath).Result; // TODO to async?
                 _instance._mountedFileSystems.Add(volumePath, fileSystem);
                 return fileSystem;
             }
         }
 
+        /// <summary>
+        /// Unmount already mounted file system from process.
+        /// If file system isn't mounted nothing will happened
+        /// </summary>
+        /// <param name="fileSystem">An object, that represents a file system</param>
+        /// <exception cref="ArgumentNullException">fileSystem object is null</exception>
         public static void Unmount(IFileSystem fileSystem)
         {
             if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));

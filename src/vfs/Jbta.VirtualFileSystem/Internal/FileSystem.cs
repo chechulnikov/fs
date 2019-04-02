@@ -84,7 +84,7 @@ namespace Jbta.VirtualFileSystem.Internal
             }
         }
 
-        public bool TryCloseFile(IFile file)
+        public bool CloseFile(IFile file)
         {
             if (file == null) throw new ArgumentNullException(nameof(file));
             
