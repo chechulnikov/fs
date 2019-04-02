@@ -257,7 +257,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
                 node.Children[0] = leftSibling.Children[leftSibling.KeysNumber + 1];
                 
                 // update keys on the way to root
-                UpdateKeysOnTheWayToRoot(leftSibling);
+                UpdateKeysOnTheWayToRoot(leftSibling, key);
             }
             else if (rightSibling != null && rightSibling.KeysNumber > Degree - 1)
             {
@@ -270,7 +270,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
                 node.Children[node.KeysNumber - 1] = rightSibling.Children[0];
                 
                 // update keys on the way to root
-                UpdateKeysOnTheWayToRoot(node);
+                UpdateKeysOnTheWayToRoot(node, key);
             }
             else
             {
@@ -290,7 +290,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
                     leftSibling.RightSibling = node.RightSibling;
                     node.RightSibling.LeftSibling = leftSibling;
                     
-                    UpdateKeysOnTheWayToRoot(leftSibling);
+                    UpdateKeysOnTheWayToRoot(leftSibling, key);
                     DeleteInNode(leftSibling.Parent, node.Keys.Min());
                 }
                 else if (rightSibling != null)
@@ -310,7 +310,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
                     rightSibling.RightSibling.LeftSibling = node;
                     node.RightSibling = rightSibling.RightSibling;
                     
-                    UpdateKeysOnTheWayToRoot(node);
+                    UpdateKeysOnTheWayToRoot(node, key);
                     DeleteInNode(node.Parent, rightSibling.Keys.Min());
                 }
                 else
@@ -325,10 +325,37 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
             }
         }
 
-        // todo !!!!!
-        private void UpdateKeysOnTheWayToRoot(IBPlusTreeNode node)
+        private static void UpdateKeysOnTheWayToRoot(IBPlusTreeNode node, string deletingKey)
         {
-            throw new NotImplementedException();
+            while (true)
+            {
+                if (node == null) return;
+
+                if (node.IsLeaf || node.Children[0].IsLeaf)
+                {
+                    node = node.Parent;
+                    continue;
+                }
+
+                for (var i = 0; i < node.KeysNumber; i++)
+                {
+                    if (string.Compare(node.Keys[i], deletingKey, StringComparison.InvariantCulture) == 0)
+                    {
+                        node.Keys[i] = FindMinNode(node.Children[i + 1]).Keys[0];
+                    }
+                }
+
+                node = node.Parent;
+            }
+        }
+        
+        private static IBPlusTreeNode FindMinNode(IBPlusTreeNode node)
+        {
+            while (true)
+            {
+                if (node.IsLeaf) return node;
+                node = node.Children[0];
+            }
         }
     }
 }
