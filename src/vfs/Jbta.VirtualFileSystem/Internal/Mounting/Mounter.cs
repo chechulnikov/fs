@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
@@ -39,7 +38,7 @@ namespace Jbta.VirtualFileSystem.Internal.Mounting
 
         private static int ValidateHeader(string volumePath)
         {
-            var buffer = new byte[sizeof(int) + sizeof(bool) + sizeof(int)];
+            var buffer = new byte[3 * sizeof(int) + sizeof(bool)];
             using (var stream = new FileStream(volumePath, FileMode.Open))
             {
                 stream.Read(buffer);
@@ -47,10 +46,8 @@ namespace Jbta.VirtualFileSystem.Internal.Mounting
 
             var offset = 0;
             var magicNumber = BitConverter.ToInt32(buffer, offset);
-            offset += sizeof(int) - 1;
-            var isDirty = BitConverter.ToBoolean(buffer, offset);
-            offset += sizeof(bool);
-            var blockSize = BitConverter.ToInt32(buffer, offset);
+            var isDirty = BitConverter.ToBoolean(buffer, offset += sizeof(int));
+            var blockSize = BitConverter.ToInt32(buffer, offset + sizeof(bool));
             
             if (magicNumber != GlobalConstant.SuperblockMagicNumber)
             {
@@ -64,16 +61,15 @@ namespace Jbta.VirtualFileSystem.Internal.Mounting
             return blockSize;
         }
 
-        private static async ValueTask<Superblock> ReadSuperblock(IVolumeReader volume)
+        private async ValueTask<Superblock> ReadSuperblock(IVolumeReader volume)
         {
             var superblockData = await volume.ReadBlocks(0, 1);
-            using (var ms = new MemoryStream(superblockData))
-                return (Superblock) new BinaryFormatter().Deserialize(ms);
+            return _superblockSerializer.Deserialize(superblockData);
         }
 
-        private async Task<IndexBlock> ReadRootIndexBlock(Volume volume, Superblock superblock)
+        private async Task<IndexBlock> ReadRootIndexBlock(IVolumeReader volume, Superblock superblock)
         {
-            var blockData = await volume.ReadBlocks(superblock.RootIndexBlockNumber);
+            var blockData = await volume.ReadBlocks(superblock.RootIndexBlockNumber + 1);
             return _indexBlockSerializer.Deserialize(blockData);
         }
 

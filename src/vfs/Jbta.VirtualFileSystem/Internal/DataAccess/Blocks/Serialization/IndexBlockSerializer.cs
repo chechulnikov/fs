@@ -54,22 +54,18 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks.Serialization
 
             var offset = 0;
             result.IsLeaf = BitConverter.ToBoolean(data, offset);
-            offset += sizeof(bool);
-            result.ParentBlockNumber = BitConverter.ToInt32(data, offset);
+            result.ParentBlockNumber = BitConverter.ToInt32(data, offset += sizeof(bool));
+            result.LeftSiblingBlockNumber = BitConverter.ToInt32(data, offset += sizeof(int));
+            result.RightSiblingBlockNumber = BitConverter.ToInt32(data, offset += sizeof(int));
+            result.KeysNumber = BitConverter.ToInt32(data, offset += sizeof(int));
             offset += sizeof(int);
-            result.LeftSiblingBlockNumber = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
-            result.RightSiblingBlockNumber = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
-            result.KeysNumber = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
-            foreach (var i in Enumerable.Range(0, result.KeysNumber))
+            foreach (var i in Enumerable.Range(0, GlobalConstant.BPlusTreeDegree))
             {
                 var key = Encoding.Unicode.GetString(new Span<byte>(data, offset, GlobalConstant.MaxFileNameSizeInBytes));
                 result.Keys[i] = key;
                 offset += GlobalConstant.MaxFileNameSizeInBytes;
             }
-            foreach (var i in Enumerable.Range(0, result.KeysNumber + 1))
+            foreach (var i in Enumerable.Range(0, GlobalConstant.BPlusTreeDegree + 1))
             {
                 result.ChildrenBlockNumbers[i] = BitConverter.ToInt32(data, offset);
                 offset += sizeof(int);

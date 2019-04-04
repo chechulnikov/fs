@@ -31,14 +31,14 @@ namespace Jbta.VirtualFileSystem.Internal.Initialization
         private static Superblock CreateSuperblock() => new Superblock
         {
             MagicNumber = GlobalConstant.SuperblockMagicNumber,
-            BlockSize = GlobalConstant.BlockSize,
+            BlockSize = GlobalConstant.DefaultBlockSize,
             IsDirty = false,
-            RootIndexBlockNumber = GlobalConstant.BlockSize * GlobalConstant.BitmapBlocksCount + 1
+            RootIndexBlockNumber = GlobalConstant.BitmapBlocksCount + 1
         };
 
         private static BitArray CreateBitmap()
         {
-            var bitArray = new BitArray(8 * GlobalConstant.BlockSize * GlobalConstant.BitmapBlocksCount);
+            var bitArray = new BitArray(8 * GlobalConstant.DefaultBlockSize * GlobalConstant.BitmapBlocksCount);
             foreach (var i in Enumerable.Range(0, GlobalConstant.BitmapBlocksCount + 2))
             {
                 bitArray.Set(i, true);
@@ -49,7 +49,7 @@ namespace Jbta.VirtualFileSystem.Internal.Initialization
         private async ValueTask CreateVolume(
             string volumePath, Superblock superblock, BitArray bitmap, IndexBlock indexBlock)
         {
-            var volume = new Volume(volumePath, GlobalConstant.BlockSize);
+            var volume = new Volume(volumePath, GlobalConstant.DefaultBlockSize);
             await volume.WriteBlock(_superblockSerializer.Serialize(superblock), 0);
             await volume.WriteBlocks(bitmap.ToByteArray(), Enumerable.Range(1, GlobalConstant.BitmapBlocksCount).ToArray());
             await volume.WriteBlock(_indexBlockSerializer.Serialize(indexBlock), GlobalConstant.BitmapBlocksCount + 1);

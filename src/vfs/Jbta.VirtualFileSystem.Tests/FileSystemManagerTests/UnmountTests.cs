@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
 {
-    public class UnmountTests
+    public class UnmountTests : BaseTestsWithFileSystemInit
     {
         [Theory]
         [InlineData(null)]

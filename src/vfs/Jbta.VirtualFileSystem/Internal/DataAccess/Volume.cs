@@ -39,7 +39,7 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
             using (var stream = System.IO.File.OpenRead(VolumePath))
             {
                 stream.Seek(startBlockNumber * _blockSize, SeekOrigin.Begin);
-                await stream.ReadAsync(buffer, startBlockNumber * _blockSize, blocksCount * _blockSize);
+                await stream.ReadAsync(buffer);
             }
             return buffer;
         }

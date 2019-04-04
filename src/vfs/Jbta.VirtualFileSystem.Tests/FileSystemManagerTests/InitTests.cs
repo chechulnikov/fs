@@ -28,13 +28,13 @@ namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
         [Fact]
         public async Task Init_HappyPath_FileWasCreatedAndHasExpectedSize()
         {
-            // Act
+            // act
             await FileSystemManager.Init(_volumePath);
             
-            // Assert
+            // assert
             Assert.True(System.IO.File.Exists(_volumePath));
             Assert.Equal(
-                GlobalConstant.BlockSize * (GlobalConstant.BitmapBlocksCount + 2),
+                GlobalConstant.DefaultBlockSize * (GlobalConstant.BitmapBlocksCount + 2),
                 new FileInfo(_volumePath).Length
             );
         }
@@ -42,18 +42,18 @@ namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
         [Fact]
         public async Task Init_HappyPath_ValidSuperblock()
         {
-            // Act
+            // act
             await FileSystemManager.Init(_volumePath);
             
-            // Assert
-            var superblockBytes = new byte[GlobalConstant.BlockSize];
+            // assert
+            var superblockBytes = new byte[GlobalConstant.DefaultBlockSize];
             using (var fs = System.IO.File.OpenRead(_volumePath)) await fs.ReadAsync(superblockBytes);
             var offset = 0;
             Assert.Equal(GlobalConstant.SuperblockMagicNumber, BitConverter.ToInt32(superblockBytes));
             Assert.False(BitConverter.ToBoolean(superblockBytes, offset += sizeof(int)));
-            Assert.Equal(GlobalConstant.BlockSize, BitConverter.ToInt32(superblockBytes, offset += sizeof(bool)));
+            Assert.Equal(GlobalConstant.DefaultBlockSize, BitConverter.ToInt32(superblockBytes, offset += sizeof(bool)));
             Assert.Equal(
-                GlobalConstant.BlockSize * GlobalConstant.BitmapBlocksCount + 1,
+                GlobalConstant.DefaultBlockSize * GlobalConstant.BitmapBlocksCount + 1,
                 BitConverter.ToInt32(superblockBytes, offset + sizeof(int))
             );
         }
@@ -61,20 +61,20 @@ namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
         [Fact]
         public async Task Init_HappyPath_ValidBitmap()
         {
-            // Act
+            // act
             await FileSystemManager.Init(_volumePath);
             
-            // Assert
-            var bitmapBytes = new byte[GlobalConstant.BlockSize * GlobalConstant.BitmapBlocksCount];
+            // assert
+            var bitmapBytes = new byte[GlobalConstant.DefaultBlockSize * GlobalConstant.BitmapBlocksCount];
             using (var fs = System.IO.File.OpenRead(_volumePath))
             {
-                fs.Seek(GlobalConstant.BlockSize, SeekOrigin.Begin);
+                fs.Seek(GlobalConstant.DefaultBlockSize, SeekOrigin.Begin);
                 await fs.ReadAsync(bitmapBytes);
             }
             var bitmap = new BitArray(bitmapBytes);
             for (var i = 0; i < GlobalConstant.BitmapBlocksCount + 2; i++)
             {
-                    Assert.True(bitmap[i]);
+                Assert.True(bitmap[i]);
             }
             for (var i = GlobalConstant.BitmapBlocksCount + 2; i < bitmap.Count; i++)
             {

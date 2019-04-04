@@ -37,14 +37,12 @@ namespace Jbta.VirtualFileSystem.Internal
             _locker = new ReaderWriterLockSlim();
             IsMounted = true;
         }
-
-        private int BlocksCount => _fileSystemMeta.BlockSize * GlobalConstant.BitmapBlocksCount * 8;
         
         public string VolumePath { get; }
 
-        public ulong VolumeSize => (ulong) (_fileSystemMeta.BlockSize * BlocksCount);
+        public ulong VolumeSize => (ulong) _fileSystemMeta.BlockSize * (ulong) _fileSystemMeta.BlocksCount;
         
-        public ulong UsedSpace => (ulong) (_fileSystemMeta.BlockSize * _fileSystemMeta.UsedBlocksCount);
+        public ulong UsedSpace => (ulong) _fileSystemMeta.BlockSize * (ulong) _fileSystemMeta.UsedBlocksCount;
 
         public ulong UnusedSpace => VolumeSize - UsedSpace;
         

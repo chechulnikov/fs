@@ -32,8 +32,10 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             
             for (var i = bitmapData.Length - 1; i >= 0; i--)
                 _tree[i] = TreeOperation(_tree[2 * i], _tree[2 * i + 1]);
-
-            SetBitsCount = CountUnsetBits();
+            
+            // count set bits
+            for (var i = 0; i < _dataLength; i++)
+                if (this[i]) SetBitsCount++;
         }
 
         public int SetBitsCount { get; private set; }
@@ -123,16 +125,6 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             }
                 
             return position - _dataLength;
-        }
-
-        private int CountUnsetBits()
-        {
-            var unsetBitsCount = 0;
-            for (var i = _dataLength; i < _tree.Count; i++)
-            {
-                if (_tree[i]) unsetBitsCount++;
-            }
-            return unsetBitsCount;
         }
 
         // boolean min
