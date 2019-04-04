@@ -27,7 +27,16 @@ namespace Jbta.VirtualFileSystem.Internal
 
         public string Name { get; }
 
-        public int Size => CalcDataBlocksSizeInBytes(_fileSystemMeta.BlockSize) + _fileSystemMeta.BlockSize;
+        public int Size
+        {
+            get
+            {
+                var fileMetaBlockSize = _fileSystemMeta.BlockSize;
+                var indirectBlockCapacity = _fileSystemMeta.BlockSize / sizeof(int);
+                var dataBlocksCount = _fileMetaBlock.DirectBlocksCount + _fileMetaBlock.IndirectBlocksCount * indirectBlockCapacity;
+                return dataBlocksCount * _fileSystemMeta.BlockSize + fileMetaBlockSize;
+            }
+        }
 
         public Task<Memory<byte>> Read(int offset, int length)
         {
@@ -46,11 +55,5 @@ namespace Jbta.VirtualFileSystem.Internal
         }
 
         public void Dispose() => _locker?.Dispose();
-        
-        private int CalcDataBlocksSizeInBytes(int blockSize)
-        {
-            var indirectBlockCapacity = blockSize / sizeof(int);
-            return (_fileMetaBlock.DirectBlocksCount + _fileMetaBlock.IndirectBlocksCount * indirectBlockCapacity) * blockSize;
-        }
     }
 }

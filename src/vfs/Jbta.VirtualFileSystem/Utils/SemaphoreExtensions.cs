@@ -14,7 +14,7 @@ namespace Jbta.VirtualFileSystem.Utils
             public Waiter(SemaphoreSlim l)
             {
                 _lock = l;
-                _lock.WaitAsync();
+                _lock.Wait();
             }
 
             public void Dispose() => _lock.Release();

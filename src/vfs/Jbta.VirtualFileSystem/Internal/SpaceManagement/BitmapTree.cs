@@ -111,7 +111,7 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         public int GetFirstUnsetBit()
         {
             var position = 1;
-            while (position <= 2 * _dataLength)
+            while (position < _dataLength)
             {
                 position *= 2;
 
@@ -119,7 +119,7 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
                 var right = _tree[position + 1];
 
                 if (!left) continue;
-                if (!right) throw new FileSystemException("Invalid bitmap tree state");
+                if (right) throw new FileSystemException("Invalid bitmap tree state");
 
                 position += 1;
             }

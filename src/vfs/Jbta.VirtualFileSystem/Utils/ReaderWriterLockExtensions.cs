@@ -23,7 +23,7 @@ namespace Jbta.VirtualFileSystem.Utils
 
             public void Dispose()
             {
-                _lock.ExitReadLock();
+                if (_lock.IsReadLockHeld) _lock.ExitReadLock();
             }
         }
 
@@ -39,7 +39,7 @@ namespace Jbta.VirtualFileSystem.Utils
 
             public void Dispose()
             {
-                _lock.ExitUpgradeableReadLock();
+                if (_lock.IsUpgradeableReadLockHeld) _lock.ExitUpgradeableReadLock();
             }
         }
 
@@ -55,7 +55,7 @@ namespace Jbta.VirtualFileSystem.Utils
 
             public void Dispose()
             {
-                _lock.ExitWriteLock();
+                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
             }
         }
     }

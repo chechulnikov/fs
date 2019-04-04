@@ -6,7 +6,6 @@ using Jbta.VirtualFileSystem.Internal;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks.Serialization;
 using Jbta.VirtualFileSystem.Internal.Initialization;
 using Jbta.VirtualFileSystem.Internal.Mounting;
-using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem
 {
@@ -15,7 +14,7 @@ namespace Jbta.VirtualFileSystem
     /// </summary>
     public class FileSystemManager
     {
-        private static readonly SemaphoreSlim Locker;
+        private static readonly object Locker;
         private static volatile FileSystemManager _instance;
         private readonly Dictionary<string, IFileSystem> _mountedFileSystems;
         private readonly Mounter _mounter;
@@ -23,10 +22,10 @@ namespace Jbta.VirtualFileSystem
         
         static FileSystemManager()
         {
-            Locker = new SemaphoreSlim(1, 1);
+            Locker = new SemaphoreSlim(0, 1);
             
             if (_instance != null) return;
-            using (Locker.Lock())
+            lock (Locker)
             {
                 if (_instance == null)
                 {
@@ -68,7 +67,7 @@ namespace Jbta.VirtualFileSystem
         /// <param name="volumePath">Path to file with valid volume</param>
         /// <returns>An object, that represents a file system</returns>
         /// <exception cref="ArgumentException">File path should be valid</exception>
-        public static async Task<IFileSystem> Mount(string volumePath)
+        public static IFileSystem Mount(string volumePath)
         {
             volumePath = volumePath?.Trim();
             if (!System.IO.File.Exists(volumePath))
@@ -76,14 +75,17 @@ namespace Jbta.VirtualFileSystem
 
             if (_instance._mountedFileSystems.ContainsKey(volumePath))
                 return _instance._mountedFileSystems[volumePath];
-            
-            using (Locker.Lock())
+
+            lock (Locker)
             {
                 if (_instance._mountedFileSystems.ContainsKey(volumePath))
+                {
                     return _instance._mountedFileSystems[volumePath];
-                
-                var fileSystem = await _instance._mounter.Mount(volumePath);
+                }
+    
+                var fileSystem = _instance._mounter.Mount(volumePath).Result;
                 _instance._mountedFileSystems.Add(volumePath, fileSystem);
+    
                 return fileSystem;
             }
         }
@@ -93,15 +95,15 @@ namespace Jbta.VirtualFileSystem
         /// If file system isn't mounted nothing will happened
         /// </summary>
         /// <param name="volumePath">Path to file with valid volume</param>
-        /// <exception cref="ArgumentNullException">fileSystem object is null</exception>
+        /// <exception cref="ArgumentException">fileSystem object is null</exception>
         public static void Unmount(string volumePath)
         {
             if (!System.IO.File.Exists(volumePath))
                 throw new ArgumentException($"File not found by path {volumePath}");
             
             if (!_instance._mountedFileSystems.ContainsKey(volumePath)) return;
-            
-            using (Locker.Lock())
+
+            lock (Locker)
             {
                 if (!_instance._mountedFileSystems.ContainsKey(volumePath)) return;
                 if (_instance._mountedFileSystems.Remove(volumePath, out var fs)) fs.Dispose();

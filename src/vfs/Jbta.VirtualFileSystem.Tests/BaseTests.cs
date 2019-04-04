@@ -1,12 +1,12 @@
 using System;
 
-namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
+namespace Jbta.VirtualFileSystem.Tests
 {
-    public abstract class BaseTestsWithFileSystemInit : IDisposable
+    public abstract class BaseTests : IDisposable
     {
         protected readonly string VolumePath;
         
-        protected BaseTestsWithFileSystemInit()
+        protected BaseTests()
         {
             VolumePath = $"test-volume_{Guid.NewGuid()}.dat";
             FileSystemManager.Init(VolumePath).Wait();

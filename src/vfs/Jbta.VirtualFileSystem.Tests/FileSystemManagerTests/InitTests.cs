@@ -53,7 +53,7 @@ namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
             Assert.False(BitConverter.ToBoolean(superblockBytes, offset += sizeof(int)));
             Assert.Equal(GlobalConstant.DefaultBlockSize, BitConverter.ToInt32(superblockBytes, offset += sizeof(bool)));
             Assert.Equal(
-                GlobalConstant.DefaultBlockSize * GlobalConstant.BitmapBlocksCount + 1,
+                GlobalConstant.BitmapBlocksCount + 1,
                 BitConverter.ToInt32(superblockBytes, offset + sizeof(int))
             );
         }

@@ -1,28 +1,29 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
 {
-    public class MountTestsWithFileSystemInit : BaseTestsWithFileSystemInit
+    public class MountTests : BaseTests
     {
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("      ")]
         [InlineData("foobar")]
-        public Task Mount_VolumePathIsInvalid_ArgumentException(string volumePath)
+        public void Mount_VolumePathIsInvalid_ArgumentException(string volumePath)
         {
-            return Assert.ThrowsAsync<ArgumentException>(() => FileSystemManager.Mount(volumePath));
+            // act, assert
+            Assert.Throws<ArgumentException>(() => FileSystemManager.Mount(volumePath));
         }
         
         [Fact]
-        public async Task Mount_HappyPath_ValidFileSystem()
+        public void Mount_HappyPath_ValidFileSystem()
         {
             // act
-            var fileSystem = await FileSystemManager.Mount(VolumePath);
+            var fileSystem = FileSystemManager.Mount(VolumePath);
 
             // assert
             Assert.NotNull(fileSystem);
@@ -34,13 +35,13 @@ namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
         }
 
         [Fact]
-        public async Task Mount_FileSystemHasAlreadyMounted_SameObject()
+        public void Mount_FileSystemHasAlreadyMounted_SameObject()
         {
             // arrange
-            var first = await FileSystemManager.Mount(VolumePath);
+            var first = FileSystemManager.Mount(VolumePath);
 
             // act
-            var second = await FileSystemManager.Mount(VolumePath);
+            var second = FileSystemManager.Mount(VolumePath);
 
             // assert
             Assert.Same(first, second);
@@ -49,18 +50,20 @@ namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
         [Fact]
         public async Task Mount_MultithreadedEnv_SameObject()
         {
-            // arrange
-            var first = await FileSystemManager.Mount(VolumePath);
-
             // act
             var fileSystems = new List<IFileSystem>();
-            new Thread(() =>
-            {
-                var second = await FileSystemManager.Mount(VolumePath);
-            }).Start();
+            var tasks = Enumerable.Range(0, 10)
+                .Select(_ => Task.Run(() =>
+                {
+                    var fileSystem = FileSystemManager.Mount(VolumePath);
+                    fileSystems.Add(fileSystem);
+                }))
+                .ToList();
+            await Task.WhenAll(tasks);
 
             // assert
-            Assert.Same(first, second);
+            var anyFs = fileSystems.First();
+            Assert.All(fileSystems, fs => Assert.Same(anyFs, fs));
         }
     }
 }
