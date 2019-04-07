@@ -60,11 +60,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 }
 
                 // find position for new key
-                var position = 0;
-                while (position < leaf.KeysNumber && LessThan(leaf.Keys[position], key))
-                {
-                    position++;
-                }
+                var position = CalcPosition(leaf, key);
                 
                 // key inserting
                 for (var i = leaf.KeysNumber; i >= position + 1; i--)
@@ -138,6 +134,10 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             
             // move Degree-1 values and according pointers to newNode
             var midKey = node.Keys[_degree];
+//            if (midKey == "foo111")
+//            {
+//                var _ = 42;
+//            }
             newNode.KeysNumber = _degree - 1;
             node.KeysNumber = _degree;
             for (var i = 0; i < newNode.KeysNumber; i++)
@@ -150,23 +150,25 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 node.Children[i + _degree + 1] = null;
             }
             newNode.Children[newNode.KeysNumber] = node.Children[2 * _degree];
+            node.Children[2 * _degree] = null;
             
             if (node.IsLeaf)
             {
-                newNode.KeysNumber++;
                 newNode.IsLeaf = true;
                 
                 // move into newNode element midKey
-                for (var i = newNode.KeysNumber - 1; i >= 1; i--)
+                for (var i = newNode.KeysNumber; i >= 1; i--)
                 {
                     newNode.Keys[i] = newNode.Keys[i - 1];
                     newNode.Values[i] = newNode.Values[i - 1];
                 }
                 newNode.Keys[0] = node.Keys[_degree];
                 newNode.Values[0] = node.Values[_degree];
-                node.Keys[_degree] = null;
-                node.Values[_degree] = 0;
+                newNode.KeysNumber++;
             }
+            
+            node.Keys[_degree] = null;
+            node.Values[_degree] = 0;
             
             if (node == Root)
             {
@@ -187,11 +189,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 var parent = node.Parent;
                 
                 // find position midKey into parent
-                var position = 0;
-                while (position < parent.KeysNumber && LessThan(parent.Keys[position], midKey))
-                {
-                    position++;
-                }
+                var position = CalcPosition(parent, midKey);
                 
                 // add midKey into parent and wire reference from it to newNode
                 for (var i = parent.KeysNumber; i >= position + 1; i--)
@@ -221,131 +219,208 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 
         private async Task DeleteInNode(IBPlusTreeNode node, string key)
         {
-            if (!node.Keys.Contains(key))
+            if (node == null || !node.Keys.Contains(key))
             {
                 return;
             }
-            
-            // searches position of deleting key
-            var position = 0;
-            while (position < node.KeysNumber && LessThan(node.Keys[position], key))
-            {
-                position++;
-            }
-            
+                
             // delete key
-            for (var i = position; i <= node.KeysNumber - 1; i++)
+            var position = CalcPosition(node, key);
+            for (var i = position; i < node.KeysNumber; i++)
             {
                 node.Keys[i] = node.Keys[i + 1];
                 node.Values[i] = node.Values[i + 1];
+                //node.Children[i + 1] = node.Children[i + 2];
             }
+            //node.Children[node.KeysNumber] = node.Children[i + 1];
             for (var i = position + 1; i <= node.KeysNumber; i++)
             {
                 node.Children[i] = node.Children[i + 1];
             }
-            node.KeysNumber++;
-
-            if (node.KeysNumber >= _degree - 1)
-            {
-                return;
-            }
-
-            var rightSibling = node.RightSibling;
-            var leftSibling = node.LeftSibling;
+            node.Keys[node.KeysNumber - 1] = null;
+            node.Values[node.KeysNumber - 1] = 0;
+            node.Children[node.KeysNumber] = null;
+            node.KeysNumber--;
             
-            if (leftSibling != null && leftSibling.KeysNumber > _degree - 1)
+            _modifiedNodes.Add(node);
+
+            if (position == 0)
             {
-                leftSibling.KeysNumber--;
-                node.KeysNumber++;
-                
-                // move max key from leftSibling to first position in node
-                for (var i = 1; i <= node.KeysNumber - 1; i++)
-                {
-                    node.Keys[i] = node.Keys[i - 1];
-                    node.Values[i] = node.Values[i - 1];
-                    node.Children[i] = node.Children[i - 1];
-                }
-                node.Children[node.KeysNumber] = node.Children[node.KeysNumber - 1];
-                node.Keys[0] = leftSibling.Keys[leftSibling.KeysNumber];
-                node.Values[0] = leftSibling.Values[leftSibling.KeysNumber];
-                node.Children[0] = leftSibling.Children[leftSibling.KeysNumber + 1];
-                
-                // update keys on the way to root
-                UpdateKeysOnTheWayToRoot(leftSibling, key);
-            }
-            else if (rightSibling != null && rightSibling.KeysNumber > _degree - 1)
-            {
-                rightSibling.KeysNumber--;
-                node.KeysNumber++;
-                
-                // move min key from rightSibling on the last position in node
-                node.Keys[node.KeysNumber - 1] = rightSibling.Keys[0];
-                node.Values[node.KeysNumber - 1] = rightSibling.Values[0];
-                node.Children[node.KeysNumber - 1] = rightSibling.Children[0];
-                
-                // update keys on the way to root
+                // update key in parent
                 UpdateKeysOnTheWayToRoot(node, key);
             }
-            else
-            {
-                if (leftSibling != null)
-                {
-                    // merge node and leftSibling
-                    for (var i = 0; i <= node.KeysNumber - 1; i++)
-                    {
-                        leftSibling.Keys[leftSibling.KeysNumber] = node.Keys[i];
-                        leftSibling.Values[leftSibling.KeysNumber] = node.Values[i];
-                        leftSibling.Children[leftSibling.KeysNumber + 1] = node.Children[i];
-                        leftSibling.KeysNumber++;
-                    }
-                    leftSibling.Children[leftSibling.KeysNumber + 1] = node.Children[node.KeysNumber];
-                    
-                    // swap right and left pointers
-                    leftSibling.RightSibling = node.RightSibling;
-                    node.RightSibling.LeftSibling = leftSibling;
-                    
-                    UpdateKeysOnTheWayToRoot(leftSibling, key);
-                    await DeleteInNode(leftSibling.Parent, node.Keys.Min());
-                }
-                else if (rightSibling != null)
-                {
-                    // merge node and rightSibling
-                    for (var i = 0; i <= node.KeysNumber - 1; i++)
-                    {
-                        node.Keys[node.KeysNumber] = rightSibling.Keys[i];
-                        node.Values[node.KeysNumber] = rightSibling.Values[i];
-                        node.Children[node.KeysNumber + 1] = rightSibling.Children[i];
-                        node.KeysNumber++;
-                    }
 
-                    node.Children[node.KeysNumber + 1] = rightSibling.Children[rightSibling.KeysNumber];
-                    
-                    // swap right and left pointers
-                    rightSibling.RightSibling.LeftSibling = node;
-                    node.RightSibling = rightSibling.RightSibling;
-                    
-                    UpdateKeysOnTheWayToRoot(node, key);
-                    await DeleteInNode(node.Parent, rightSibling.Keys.Min());
-                }
-                else
-                {
-                    throw new InvalidOperationException("Invalid B+-tree state");
-                }
-            }
-
-            if (Root.KeysNumber == 1)
+            // need to balance?
+            if (node.KeysNumber < _degree - 1)
             {
-                Root = Root.Children[0];
+                await BalanceAfterDeletion(node, key);
             }
         }
 
-        private void UpdateKeysOnTheWayToRoot(IBPlusTreeNode node, string deletingKey)
+        private async Task BalanceAfterDeletion(IBPlusTreeNode node, string key)
+        {
+            var rightSibling = node.RightSibling;
+            var leftSibling = node.LeftSibling;
+
+            // move min key from left sibling
+            if (leftSibling != null && leftSibling.KeysNumber > _degree)
+            {
+                MoveMaxKeyFromLeftSibling(node);
+            }
+            // ...or move max key from right one
+            else if (rightSibling != null && rightSibling.KeysNumber > _degree)
+            {
+                MoveMinKeyFromRightSibling(node);
+            }
+            // ...or remove node
+            else await DeleteNode(node, key);
+            
+            TryToShrinkTreeHeight();
+        }
+
+        // move max key from leftSibling to the first position in node and updates parents
+        private void MoveMaxKeyFromLeftSibling(IBPlusTreeNode node)
+        {
+            var leftSibling = node.LeftSibling;
+            var outdatedKey = node.Keys[0];
+
+            node.Children[node.KeysNumber + 1] = node.Children[node.KeysNumber];
+            for (var i = node.KeysNumber; i >= 1; i--)
+            {
+                node.Keys[i] = node.Keys[i - 1];
+                node.Values[i] = node.Values[i - 1];
+                node.Children[i] = node.Children[i - 1];
+            }
+            node.KeysNumber++;
+            
+            node.Keys[0] = leftSibling.Keys[leftSibling.KeysNumber - 1];
+            node.Values[0] = leftSibling.Values[leftSibling.KeysNumber - 1];
+            node.Children[0] = leftSibling.Children[leftSibling.KeysNumber];
+
+            leftSibling.Keys[leftSibling.KeysNumber - 1] = null;
+            leftSibling.Values[leftSibling.KeysNumber - 1] = 0;
+            leftSibling.Children[leftSibling.KeysNumber] = null;
+            leftSibling.KeysNumber--;
+
+            _modifiedNodes.Add(leftSibling);
+            _modifiedNodes.Add(node);
+            
+            UpdateKeysOnTheWayToRoot(node, outdatedKey);
+        }
+
+        // move min key from rightSibling on the last position in node and updates parents
+        private void MoveMinKeyFromRightSibling(IBPlusTreeNode node)
+        {
+            var rightSibling = node.RightSibling;
+            var outdatedKey = rightSibling.Keys[0];
+
+            node.Keys[node.KeysNumber] = rightSibling.Keys[0];
+            node.Values[node.KeysNumber] = rightSibling.Values[0];
+            node.Children[node.KeysNumber + 1] = rightSibling.Children[0];
+            node.KeysNumber++;
+            
+            for (var i = 1; i < rightSibling.KeysNumber; i++)
+            {
+                rightSibling.Keys[i - 1] = rightSibling.Keys[i];
+                rightSibling.Values[i - 1] = rightSibling.Values[i];
+                rightSibling.Children[i - 1] = rightSibling.Children[i];
+            }
+            rightSibling.Children[rightSibling.KeysNumber - 1] = rightSibling.Children[rightSibling.KeysNumber];
+            
+            rightSibling.Keys[rightSibling.KeysNumber - 1] = null;
+            rightSibling.Values[rightSibling.KeysNumber - 1] = 0;
+            rightSibling.Children[rightSibling.KeysNumber] = null;
+            rightSibling.KeysNumber--;
+            
+            _modifiedNodes.Add(rightSibling);
+            _modifiedNodes.Add(node);
+            
+            UpdateKeysOnTheWayToRoot(node, outdatedKey);
+        }
+
+        private async Task DeleteNode(IBPlusTreeNode node, string key)
+        {
+            var rightSibling = node.RightSibling;
+            var leftSibling = node.LeftSibling;
+            
+            if (leftSibling != null)
+            {
+                var outdatedKey = node.Keys[0];
+                
+                // merge node and leftSibling
+                for (var i = 0; i < node.KeysNumber; i++)
+                {
+                    leftSibling.Keys[leftSibling.KeysNumber] = node.Keys[i];
+                    leftSibling.Values[leftSibling.KeysNumber] = node.Values[i];
+                    leftSibling.Children[leftSibling.KeysNumber + 1] = node.Children[i];
+                    leftSibling.KeysNumber++;
+                }
+                leftSibling.Children[leftSibling.KeysNumber + 1] = node.Children[node.KeysNumber];
+
+                // swap right and left pointers
+                leftSibling.RightSibling = node.RightSibling;
+                if (node.RightSibling != null)
+                {
+                    node.RightSibling.LeftSibling = leftSibling;
+                }
+
+                _deletedNodes.Add(node);
+                _modifiedNodes.Add(leftSibling);
+
+                // UpdateKeysOnTheWayToRoot(leftSibling, key);
+//                UpdateKeysOnTheWayToRoot(leftSibling, outdatedKey);
+                var min = /*FindMinNode(node).Keys[0]; //*/node.Keys.Min();
+                await DeleteInNode(leftSibling.Parent, min);
+            } else if (rightSibling != null)
+            {
+                var outdatedKey = rightSibling.Keys[0];
+                
+                // merge node and rightSibling
+                for (var i = 0; i < rightSibling.KeysNumber; i++)
+                {
+                    node.Keys[node.KeysNumber] = rightSibling.Keys[i];
+                    node.Values[node.KeysNumber] = rightSibling.Values[i];
+                    node.Children[node.KeysNumber + 1] = rightSibling.Children[i];
+                    node.KeysNumber++;
+                }
+                node.Children[node.KeysNumber + 1] = rightSibling.Children[rightSibling.KeysNumber];
+
+                // swap right and left pointers
+                if (rightSibling.RightSibling != null)
+                {
+                    rightSibling.RightSibling.LeftSibling = node;
+                }
+                node.RightSibling = rightSibling.RightSibling;
+
+                _deletedNodes.Add(rightSibling);
+                _modifiedNodes.Add(node);
+
+                // UpdateKeysOnTheWayToRoot(node, key);
+//                UpdateKeysOnTheWayToRoot(node, outdatedKey);
+//                var parent = rightSibling.Parent;
+//                for (var i = 0; i < parent.KeysNumber; i++)
+//                {
+//                    if (parent.Keys[i] == rightSibling.Keys[0])
+//                    {
+//                        parent.Keys[i] = 
+//                    }
+//                }
+
+                var min = /*FindMinNode(rightSibling).Keys[0]; //*/rightSibling.Keys.Min();
+                await DeleteInNode(node.Parent, min);
+            }
+        }
+
+        private void UpdateKeysOnTheWayToRoot(IBPlusTreeNode node, string outdatedKey)
         {
             while (true)
             {
-                if (node == null) return;
+                if (node == null)
+                {
+                    return;
+                }
 
-                if (node.IsLeaf || node.Children[0].IsLeaf)
+                if (node.IsLeaf)
                 {
                     node = node.Parent;
                     continue;
@@ -353,10 +428,13 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 
                 for (var i = 0; i < node.KeysNumber; i++)
                 {
-                    if (string.Compare(node.Keys[i], deletingKey, StringComparison.InvariantCulture) == 0)
+                    if (string.Compare(node.Keys[i], outdatedKey, StringComparison.InvariantCulture) != 0)
                     {
-                        node.Keys[i] = FindMinNode(node.Children[i + 1]).Keys[0];
+                        continue;
                     }
+                    
+                    node.Keys[i] = FindMinNode(node.Children[i + 1]).Keys[0];
+                    break;
                 }
 
                 _modifiedNodes.Add(node);
@@ -364,7 +442,8 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 node = node.Parent;
             }
         }
-        
+
+        // return the node containing min value which will be a leaf at the left most
         private static IBPlusTreeNode FindMinNode(IBPlusTreeNode node)
         {
             while (true)
@@ -374,11 +453,34 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             }
         }
 
+        private static int CalcPosition(IBPlusTreeNode node, string key)
+        {
+            var position = 0;
+            while (position < node.KeysNumber && LessThan(node.Keys[position], key))
+            {
+                position++;
+            }
+            return position;
+        }
+
         private IBPlusTreeNode NewNode()
         {
             var node = new BPlusTreeNode();
             _newNodes.Add(node);
             return node;
+        }
+
+        private void TryToShrinkTreeHeight()
+        {
+            if (Root.KeysNumber != 1)
+            {
+                return;
+            }
+
+            var newRoot = Root.Children[0];
+            //if (newRoot == null) return;
+            newRoot.Parent = null;
+            Root = newRoot;
         }
 
         private async Task Persist()
