@@ -4,7 +4,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 {
     internal class PersistentBPlusTreeNode : IBPlusTreeNode
     {
-        private const int MaxKeysPerNode = GlobalConstant.BPlusTreeDegree;
+        private const int MaxKeysPerNode = GlobalConstant.MinBPlusTreeDegree;
         private readonly BPlusTreeNodesPersistenceManager _nodesPersistenceManager;
         private IBPlusTreeNode _parent;
         private IBPlusTreeNode _leftSibling;
@@ -39,9 +39,9 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 
         public string[] Keys => IndexBlock.Keys;
 
+        public int[] Values => IndexBlock.Pointers;
+        
         public IBPlusTreeNode[] Children { get; }
-
-        public int[] Pointers => IndexBlock.Pointers;
 
         public IBPlusTreeNode Parent
         {
@@ -60,5 +60,37 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             get => _rightSibling ?? (_rightSibling = _nodesPersistenceManager.LoadNode(IndexBlock.RightSiblingBlockNumber).Result);
             set => _rightSibling = value;
         }
+
+//        public async Task<IBPlusTreeNode> GetParent() =>
+//            _parent ?? (_parent = await _nodesPersistenceManager.LoadNode(IndexBlock.ParentBlockNumber));
+//
+//        public Task SetParent(IBPlusTreeNode node) 
+//        {
+//            _parent = node;
+//            return _nodesPersistenceManager.SaveNode(node);
+//        }
+//        
+//        public async Task<IBPlusTreeNode> GetLeftSibling() =>
+//            _leftSibling ?? (_leftSibling = await _nodesPersistenceManager.LoadNode(IndexBlock.LeftSiblingBlockNumber));
+
+//        public Task SetLeftSibling(IBPlusTreeNode node) 
+//        {
+//            _leftSibling = node;
+//            return _nodesPersistenceManager.SaveNode(node);
+//        }
+//        
+//        public async Task<IBPlusTreeNode> GetRightSibling() =>
+//            _rightSibling ?? (_rightSibling = await _nodesPersistenceManager.LoadNode(IndexBlock.RightSiblingBlockNumber));
+//
+//        public Task SetRightSibling(IBPlusTreeNode node) 
+//        {
+//            _rightSibling = node;
+//            return _nodesPersistenceManager.SaveNode(node);
+//        }
+//
+//        private async Task Save()
+//        {
+//            
+//        }
     }
 }

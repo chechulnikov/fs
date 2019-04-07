@@ -48,7 +48,7 @@ namespace Jbta.VirtualFileSystem.Internal
         
         public bool IsMounted { get; private set; }
 
-        public Task<IFile> CreateFile(string fileName)
+        public Task CreateFile(string fileName)
         {
             CheckFileSystemState();
             fileName = CheckAndPrepareFileName(fileName);
@@ -57,40 +57,61 @@ namespace Jbta.VirtualFileSystem.Internal
 
         public async Task DeleteFile(string fileName)
         {
+            if (!await TryDeleteFile(fileName))
+            {
+                throw new FileSystemException("Can not delete opened file");
+            }
+        }
+
+        public async Task<bool> TryDeleteFile(string fileName)
+        {
             CheckFileSystemState();
             fileName = CheckAndPrepareFileName(fileName);
+            
+            using (_locker.ReaderLock())
+            {
+                if (_openedFiles.ContainsKey(fileName))
+                {
+                    return false;
+                }
+            }
             
             await _fileRemover.Remove(fileName);
             using (_locker.WriterLock())
             {
                 _openedFiles.Remove(fileName);
             }
+
+            return true;
         }
 
         public async Task<IFile> OpenFile(string fileName)
         {
             CheckFileSystemState();
             fileName = CheckAndPrepareFileName(fileName);
-            
-            using (_locker.UpgradableReaderLock())
+
+            using (_locker.ReaderLock())
             {
-                if (_openedFiles.TryGetValue(fileName, out var file)) return file;
-                
-                file = await _fileOpener.Open(fileName);
-                using (_locker.WriterLock())
+                if (_openedFiles.TryGetValue(fileName, out var alreadyOpenedFile))
                 {
-                    _openedFiles.Add(fileName, file);
+                    return alreadyOpenedFile;
                 }
-                
-                return file;
             }
+
+            var file = await _fileOpener.Open(fileName);
+            using (_locker.WriterLock())
+            {
+                _openedFiles.Add(fileName, file);
+            }
+                
+            return file;
         }
 
         public bool CloseFile(IFile file)
         {
             CheckFileSystemState();
             if (file == null) throw new ArgumentNullException(nameof(file));
-            
+
             using (_locker.UpgradableReaderLock())
             {
                 if (!_openedFiles.ContainsKey(file.Name)) return false;
@@ -107,10 +128,13 @@ namespace Jbta.VirtualFileSystem.Internal
         private static string CheckAndPrepareFileName(string fileName)
         {
             fileName = fileName?.Trim();
-            
             if (string.IsNullOrWhiteSpace(fileName) || fileName.Length > GlobalConstant.MaxFileNameSize)
-                throw new ArgumentException("Invalid file name");
-
+            {
+                throw new ArgumentException(
+                    $"Invalid file name \"{fileName}\". " +
+                    $"File name must be greater than 0 and less than {GlobalConstant.MaxFileNameSize + 1}"
+                );
+            }
             return fileName;
         }
 

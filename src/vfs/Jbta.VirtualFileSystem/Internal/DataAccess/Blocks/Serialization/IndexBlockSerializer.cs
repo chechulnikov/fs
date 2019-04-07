@@ -59,13 +59,13 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks.Serialization
             result.RightSiblingBlockNumber = BitConverter.ToInt32(data, offset += sizeof(int));
             result.KeysNumber = BitConverter.ToInt32(data, offset += sizeof(int));
             offset += sizeof(int);
-            foreach (var i in Enumerable.Range(0, GlobalConstant.BPlusTreeDegree))
+            foreach (var i in Enumerable.Range(0, GlobalConstant.MinBPlusTreeDegree))
             {
                 var key = Encoding.Unicode.GetString(new Span<byte>(data, offset, GlobalConstant.MaxFileNameSizeInBytes));
                 result.Keys[i] = key;
                 offset += GlobalConstant.MaxFileNameSizeInBytes;
             }
-            foreach (var i in Enumerable.Range(0, GlobalConstant.BPlusTreeDegree + 1))
+            foreach (var i in Enumerable.Range(0, GlobalConstant.MinBPlusTreeDegree + 1))
             {
                 result.ChildrenBlockNumbers[i] = BitConverter.ToInt32(data, offset);
                 offset += sizeof(int);

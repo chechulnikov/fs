@@ -4,9 +4,9 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks
     {
         public IndexBlock()
         {
-            Keys = new string[GlobalConstant.BPlusTreeDegree];
-            ChildrenBlockNumbers = new int[GlobalConstant.BPlusTreeDegree + 1];
-            Pointers = new int[GlobalConstant.BPlusTreeDegree];
+            Keys = new string[2 * GlobalConstant.MinBPlusTreeDegree];
+            Pointers = new int[2 * GlobalConstant.MinBPlusTreeDegree];
+            ChildrenBlockNumbers = new int[2 * GlobalConstant.MinBPlusTreeDegree + 1];
         }
         
         public bool IsLeaf { get; set; }

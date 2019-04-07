@@ -15,7 +15,12 @@ namespace Jbta.VirtualFileSystem.Internal
         private readonly FileMetaBlock _fileMetaBlock;
         private readonly ReaderWriterLockSlim _locker;
 
-        public File(FileSystemMeta fileSystemMeta, FileReader reader, FileWriter writer, FileMetaBlock fileMetaBlock, string name)
+        public File(
+            FileSystemMeta fileSystemMeta,
+            FileReader reader,
+            FileWriter writer,
+            FileMetaBlock fileMetaBlock,
+            string name)
         {
             _fileSystemMeta = fileSystemMeta;
             _reader = reader;

@@ -49,9 +49,10 @@ namespace Jbta.VirtualFileSystem.Tests.FileSystemTests
         {
             // act
             const string fileName = "foobar";
-            var file = await _fileSystem.CreateFile(fileName);
+            await _fileSystem.CreateFile(fileName);
             
             // assert
+            var file = await _fileSystem.OpenFile(fileName);
             Assert.NotNull(file);
             Assert.Equal(fileName, file.Name);
             Assert.Equal(GlobalConstant.DefaultBlockSize, file.Size);

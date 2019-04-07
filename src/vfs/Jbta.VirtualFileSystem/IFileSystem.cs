@@ -37,14 +37,24 @@ namespace Jbta.VirtualFileSystem
         /// Creates file by given file name
         /// </summary>
         /// <param name="fileName">A unique name of the file in file system</param>
-        /// <returns>Object, that represents a file in file system</returns>
-        Task<IFile> CreateFile(string fileName);
+        /// <exception cref="ArgumentException">Invalid file name</exception>
+        /// <exception cref="Jbta.VirtualFileSystem.Exceptions.FileSystemException">File system isn't mounted</exception>
+        /// <exception cref="Jbta.VirtualFileSystem.Exceptions.FileSystemException">File has already existed</exception>
+        Task CreateFile(string fileName);
         
         /// <summary>
         /// Deletes file by given file name
         /// </summary>
         /// <param name="fileName">A unique name of the file in file system</param>
+        /// <exception cref="Jbta.VirtualFileSystem.Exceptions.FileSystemException">File is opened</exception>
         Task DeleteFile(string fileName);
+
+        /// <summary>
+        /// Deletes file by given file name
+        /// </summary>
+        /// <param name="fileName">A unique name of the file in file system</param>
+        /// <returns>False means file cannot be deleted because it is opened</returns>
+        Task<bool> TryDeleteFile(string fileName);
         
         /// <summary>
         /// Opens file by given file name

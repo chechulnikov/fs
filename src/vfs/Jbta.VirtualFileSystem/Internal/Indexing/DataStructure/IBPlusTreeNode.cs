@@ -8,9 +8,9 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
         
         string[] Keys { get; }
         
+        int[] Values { get; }
+        
         IBPlusTreeNode[] Children { get; }
-            
-        int[] Pointers { get; }
         
         IBPlusTreeNode Parent { get; set; }
         

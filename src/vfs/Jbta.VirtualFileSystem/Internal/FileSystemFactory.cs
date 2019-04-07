@@ -26,7 +26,7 @@ namespace Jbta.VirtualFileSystem.Internal
             var fileReader = new FileReader(fileSystemMeta, volume);
             var fileWriter = new FileWriter(fileSystemMeta, allocator, volume, volume);
             var fileFactory = new FileFactory(fileSystemMeta, fileReader, fileWriter);
-            var fileCreator = new FileCreator(index, fileFactory, fileMetaBlockSerializer, allocator, volume);
+            var fileCreator = new FileCreator(index, fileMetaBlockSerializer, allocator, volume);
             var fileOpener = new FileOpener(index, fileFactory, fileMetaBlockSerializer, volume);
             var fileRemover = new FileRemover(index, deallocator, fileMetaBlockSerializer, volume);
             var unmounter = new Unmounter(superblockSerializer, superblock, volume);

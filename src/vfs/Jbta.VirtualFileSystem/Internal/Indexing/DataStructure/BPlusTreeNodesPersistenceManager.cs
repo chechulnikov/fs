@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
@@ -6,7 +9,7 @@ using Jbta.VirtualFileSystem.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 {
-    internal class BPlusTreeNodesPersistenceManager
+    internal class BPlusTreeNodesPersistenceManager : IBPlusTreeNodesPersistenceManager
     {
         private readonly BlocksAllocator _allocator;
         private readonly BlocksDeallocator _deallocator;
@@ -48,8 +51,17 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             var indexBlock = _indexBlockSerializer.Deserialize(blockData);
             return CreateFrom(indexBlock, blockNumber);
         }
+
+        public Task CreateNodes(IEnumerable<IBPlusTreeNode> nodes)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UpdateNodes(IEnumerable<IBPlusTreeNode> nodes) => Task.WhenAll(nodes.Select(SaveNode));
         
-        public async Task SaveNode(IBPlusTreeNode node)
+        public Task DeleteNodes(IEnumerable<IBPlusTreeNode> nodes) => Task.WhenAll(nodes.Select(DeleteNode));
+
+        private async Task SaveNode(IBPlusTreeNode node)
         {
             var persistentBPlusTreeNode = (PersistentBPlusTreeNode) node;
             var indexBlock = persistentBPlusTreeNode.IndexBlock;
@@ -57,10 +69,10 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             await _volumeWriter.WriteBlock(indexBlockData, persistentBPlusTreeNode.BlockNumber);
         }
 
-        public async Task DeleteNode(IBPlusTreeNode node)
+        private Task DeleteNode(IBPlusTreeNode node)
         {
             var persistentBPlusTreeNode = (PersistentBPlusTreeNode) node;
-            await _deallocator.DeallocateBlock(persistentBPlusTreeNode.BlockNumber);
+            return _deallocator.DeallocateBlock(persistentBPlusTreeNode.BlockNumber);
         }
     }
 }

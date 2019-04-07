@@ -15,9 +15,7 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             _writer = writer;
         }
         
-        public IFile New(FileMetaBlock fileMetaBlock, string name)
-        {
-            return new File(_fileSystemMeta, _fileReader, _writer, fileMetaBlock, name);
-        }
+        public IFile New(FileMetaBlock fileMetaBlock, string name) =>
+            new File(_fileSystemMeta, _fileReader, _writer, fileMetaBlock, name);
     }
 }

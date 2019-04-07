@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Jbta.VirtualFileSystem.Utils;
+using Nito.AsyncEx;
 
 namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 {
@@ -12,41 +12,46 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
     /// </summary>
     internal class BPlusTree
     {
-        private readonly BPlusTreeNodesPersistenceManager _nodesPersistenceManager;
-        private readonly ReaderWriterLockSlim _locker;
-        
-        public BPlusTree(BPlusTreeNodesPersistenceManager nodesPersistenceManager, IBPlusTreeNode root)
+        private readonly IBPlusTreeNodesPersistenceManager _nodesPersistenceManager;
+        private readonly AsyncReaderWriterLock _locker;
+        private readonly ISet<IBPlusTreeNode> _newNodes;
+        private readonly ISet<IBPlusTreeNode> _modifiedNodes;
+        private readonly ISet<IBPlusTreeNode> _deletedNodes;
+        private readonly int _degree;
+
+        public BPlusTree(IBPlusTreeNodesPersistenceManager nodesPersistenceManager, IBPlusTreeNode root)
         {
             _nodesPersistenceManager = nodesPersistenceManager;
-            _locker = new ReaderWriterLockSlim();
-            Degree = GlobalConstant.BPlusTreeDegree;
+            _locker = new AsyncReaderWriterLock();
+            _newNodes = new HashSet<IBPlusTreeNode>();
+            _modifiedNodes = new HashSet<IBPlusTreeNode>();
+            _deletedNodes = new HashSet<IBPlusTreeNode>();
+            _degree = GlobalConstant.MinBPlusTreeDegree;
             Root = root;
             Root.IsLeaf = true;
         }
 
-        public int Degree { get; }
-        
         public IBPlusTreeNode Root { get; private set; }
 
         public (int, bool) Search(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(key));
-            
+
             using (_locker.ReaderLock())
             {
                 var leaf = FindLeaf(key);
                 var index = Array.IndexOf(leaf.Keys, key);
-                return index < 0 ? (0, false) : (leaf.Pointers[index], true);
+                return index < 0 ? (0, false) : (leaf.Values[index], true);
             }
         }
 
         public async Task<bool> Insert(string key, int value)
         {
-            if (string.IsNullOrEmpty(key)) throw new ArgumentException("Value cannot be null or empty.", nameof(key));
+            if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Value cannot be null or empty.", nameof(key));
             if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value));
             
-            using (_locker.UpgradableReaderLock())
+            using (_locker.WriterLock())
             {
                 var leaf = FindLeaf(key);
                 if (leaf.Keys.Contains(key))
@@ -54,35 +59,32 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                     return false;
                 }
 
-                using (_locker.WriterLock())
+                // find position for new key
+                var position = 0;
+                while (position < leaf.KeysNumber && LessThan(leaf.Keys[position], key))
                 {
-                    // find position for new key
-                    var position = 0;
-                    while (position < leaf.KeysNumber && LessThan(leaf.Keys[position], key))
-                    {
-                        position++;
-                    }
-                    
-                    // key inserting
-                    for (var i = leaf.KeysNumber; i >= position + 1; i--)
-                    {
-                        // todo !!!
-                        leaf.Keys[i] = leaf.Keys[i - 1];
-                        leaf.Pointers[i] = leaf.Pointers[i - 1];
-                    }
-                    leaf.Keys[position] = key;
-                    leaf.Pointers[position] = value;
-                    leaf.KeysNumber++;
-
-                    if (leaf.KeysNumber == 2 * Degree)
-                    {
-                        await Split(leaf);
-                    }
-
-                    await _nodesPersistenceManager.SaveNode(leaf);
-
-                    return true;
+                    position++;
                 }
+                
+                // key inserting
+                for (var i = leaf.KeysNumber; i >= position + 1; i--)
+                {
+                    leaf.Keys[i] = leaf.Keys[i - 1];
+                    leaf.Values[i] = leaf.Values[i - 1];
+                }
+                leaf.Keys[position] = key;
+                leaf.Values[position] = value;
+                leaf.KeysNumber++;
+                
+                _modifiedNodes.Add(leaf);
+
+                if (leaf.KeysNumber == 2 * _degree)
+                {
+                    await Split(leaf);
+                }
+                
+                await Persist();
+                return true;
             }
         }
         
@@ -91,7 +93,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(key));
             
-            using (_locker.UpgradableReaderLock())
+            using (_locker.WriterLock())
             {
                 var leaf = FindLeaf(key);
                 if (!leaf.Keys.Contains(key))
@@ -99,13 +101,11 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                     return false;
                 }
 
-                using (_locker.WriterLock())
-                {
-                    await DeleteInNode(leaf, key);
-                }
+                await DeleteInNode(leaf, key);
+                
+                await Persist();
+                return true;
             }
-
-            return true;
         }
 
         private IBPlusTreeNode FindLeaf(string key)
@@ -127,25 +127,29 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 
         private async Task Split(IBPlusTreeNode node)
         {
-            var newNode = await _nodesPersistenceManager.CreateNewNode();
+            var newNode = NewNode(); //await _nodesPersistenceManager.CreateNewNode();
             
             // switch right and left siblings pointers
             newNode.RightSibling = node.RightSibling;
-            node.RightSibling.LeftSibling = newNode;
+            if (node.RightSibling != null)
+                node.RightSibling.LeftSibling = newNode;
             node.RightSibling = newNode;
             newNode.LeftSibling = node;
             
-            // move t-1 values and according pointers to newNode
-            var midKey = node.Keys[Degree];
-            newNode.KeysNumber = Degree - 1;
-            node.KeysNumber = Degree;
+            // move Degree-1 values and according pointers to newNode
+            var midKey = node.Keys[_degree];
+            newNode.KeysNumber = _degree - 1;
+            node.KeysNumber = _degree;
             for (var i = 0; i < newNode.KeysNumber; i++)
             {
-                newNode.Keys[i] = node.Keys[i + Degree + 1];
-                newNode.Pointers[i] = node.Pointers[i + Degree + 1];
-                newNode.Children[i] = node.Children[i + Degree + 1];
-                newNode.Children[newNode.KeysNumber] = node.Children[2 * Degree];
+                newNode.Keys[i] = node.Keys[i + _degree + 1];
+                newNode.Values[i] = node.Values[i + _degree + 1];
+                newNode.Children[i] = node.Children[i + _degree + 1];
+                node.Keys[i + _degree + 1] = null;
+                node.Values[i + _degree + 1] = 0;
+                node.Children[i + _degree + 1] = null;
             }
+            newNode.Children[newNode.KeysNumber] = node.Children[2 * _degree];
             
             if (node.IsLeaf)
             {
@@ -156,22 +160,26 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 for (var i = newNode.KeysNumber - 1; i >= 1; i--)
                 {
                     newNode.Keys[i] = newNode.Keys[i - 1];
-                    newNode.Pointers[i] = newNode.Pointers[i - 1];
+                    newNode.Values[i] = newNode.Values[i - 1];
                 }
-                newNode.Keys[0] = node.Keys[Degree];
-                newNode.Pointers[0] = node.Pointers[Degree];
+                newNode.Keys[0] = node.Keys[_degree];
+                newNode.Values[0] = node.Values[_degree];
+                node.Keys[_degree] = null;
+                node.Values[_degree] = 0;
             }
             
             if (node == Root)
             {
                 // create new Root node
-                Root = await _nodesPersistenceManager.CreateNewNode();
+                Root = NewNode(); //await _nodesPersistenceManager.CreateNewNode();
                 Root.Keys[0] = midKey;
                 Root.Children[0] = node;
-                Root.Children[1] = await _nodesPersistenceManager.CreateNewNode();
+                Root.Children[1] = newNode; //await _nodesPersistenceManager.CreateNewNode();
                 Root.KeysNumber = 1;
                 node.Parent = Root;
                 newNode.Parent = Root;
+                
+                _modifiedNodes.Add(Root);
             }
             else
             {
@@ -199,11 +207,13 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 parent.Children[position + 1] = newNode;
                 parent.KeysNumber++;
 
-                if (parent.KeysNumber == 2 * Degree)
+                if (parent.KeysNumber == 2 * _degree)
                 {
                     await Split(parent);
                 }
             }
+            
+            _modifiedNodes.Add(node);
         }
 
         private static bool LessThan(string a, string b) =>
@@ -227,7 +237,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             for (var i = position; i <= node.KeysNumber - 1; i++)
             {
                 node.Keys[i] = node.Keys[i + 1];
-                node.Pointers[i] = node.Pointers[i + 1];
+                node.Values[i] = node.Values[i + 1];
             }
             for (var i = position + 1; i <= node.KeysNumber; i++)
             {
@@ -235,7 +245,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             }
             node.KeysNumber++;
 
-            if (node.KeysNumber >= Degree - 1)
+            if (node.KeysNumber >= _degree - 1)
             {
                 return;
             }
@@ -243,7 +253,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             var rightSibling = node.RightSibling;
             var leftSibling = node.LeftSibling;
             
-            if (leftSibling != null && leftSibling.KeysNumber > Degree - 1)
+            if (leftSibling != null && leftSibling.KeysNumber > _degree - 1)
             {
                 leftSibling.KeysNumber--;
                 node.KeysNumber++;
@@ -252,25 +262,25 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 for (var i = 1; i <= node.KeysNumber - 1; i++)
                 {
                     node.Keys[i] = node.Keys[i - 1];
-                    node.Pointers[i] = node.Pointers[i - 1];
+                    node.Values[i] = node.Values[i - 1];
                     node.Children[i] = node.Children[i - 1];
                 }
                 node.Children[node.KeysNumber] = node.Children[node.KeysNumber - 1];
                 node.Keys[0] = leftSibling.Keys[leftSibling.KeysNumber];
-                node.Pointers[0] = leftSibling.Pointers[leftSibling.KeysNumber];
+                node.Values[0] = leftSibling.Values[leftSibling.KeysNumber];
                 node.Children[0] = leftSibling.Children[leftSibling.KeysNumber + 1];
                 
                 // update keys on the way to root
                 UpdateKeysOnTheWayToRoot(leftSibling, key);
             }
-            else if (rightSibling != null && rightSibling.KeysNumber > Degree - 1)
+            else if (rightSibling != null && rightSibling.KeysNumber > _degree - 1)
             {
                 rightSibling.KeysNumber--;
                 node.KeysNumber++;
                 
                 // move min key from rightSibling on the last position in node
                 node.Keys[node.KeysNumber - 1] = rightSibling.Keys[0];
-                node.Pointers[node.KeysNumber - 1] = rightSibling.Pointers[0];
+                node.Values[node.KeysNumber - 1] = rightSibling.Values[0];
                 node.Children[node.KeysNumber - 1] = rightSibling.Children[0];
                 
                 // update keys on the way to root
@@ -284,7 +294,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                     for (var i = 0; i <= node.KeysNumber - 1; i++)
                     {
                         leftSibling.Keys[leftSibling.KeysNumber] = node.Keys[i];
-                        leftSibling.Pointers[leftSibling.KeysNumber] = node.Pointers[i];
+                        leftSibling.Values[leftSibling.KeysNumber] = node.Values[i];
                         leftSibling.Children[leftSibling.KeysNumber + 1] = node.Children[i];
                         leftSibling.KeysNumber++;
                     }
@@ -303,7 +313,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                     for (var i = 0; i <= node.KeysNumber - 1; i++)
                     {
                         node.Keys[node.KeysNumber] = rightSibling.Keys[i];
-                        node.Pointers[node.KeysNumber] = rightSibling.Pointers[i];
+                        node.Values[node.KeysNumber] = rightSibling.Values[i];
                         node.Children[node.KeysNumber + 1] = rightSibling.Children[i];
                         node.KeysNumber++;
                     }
@@ -329,7 +339,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             }
         }
 
-        private static void UpdateKeysOnTheWayToRoot(IBPlusTreeNode node, string deletingKey)
+        private void UpdateKeysOnTheWayToRoot(IBPlusTreeNode node, string deletingKey)
         {
             while (true)
             {
@@ -349,6 +359,8 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                     }
                 }
 
+                _modifiedNodes.Add(node);
+                
                 node = node.Parent;
             }
         }
@@ -360,6 +372,23 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 if (node.IsLeaf) return node;
                 node = node.Children[0];
             }
+        }
+
+        private IBPlusTreeNode NewNode()
+        {
+            var node = new BPlusTreeNode();
+            _newNodes.Add(node);
+            return node;
+        }
+
+        private async Task Persist()
+        {
+            await _nodesPersistenceManager.CreateNodes(_newNodes);
+            await _nodesPersistenceManager.UpdateNodes(_modifiedNodes);
+            await _nodesPersistenceManager.DeleteNodes(_deletedNodes);
+            _newNodes.Clear();
+            _modifiedNodes.Clear();
+            _deletedNodes.Clear();
         }
     }
 }
