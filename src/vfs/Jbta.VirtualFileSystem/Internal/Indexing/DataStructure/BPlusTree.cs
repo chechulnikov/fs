@@ -134,10 +134,6 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             
             // move Degree-1 values and according pointers to newNode
             var midKey = node.Keys[_degree];
-//            if (midKey == "foo111")
-//            {
-//                var _ = 42;
-//            }
             newNode.KeysNumber = _degree - 1;
             node.KeysNumber = _degree;
             for (var i = 0; i < newNode.KeysNumber; i++)
@@ -230,9 +226,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             {
                 node.Keys[i] = node.Keys[i + 1];
                 node.Values[i] = node.Values[i + 1];
-                //node.Children[i + 1] = node.Children[i + 2];
             }
-            //node.Children[node.KeysNumber] = node.Children[i + 1];
             for (var i = position + 1; i <= node.KeysNumber; i++)
             {
                 node.Children[i] = node.Children[i + 1];
@@ -251,7 +245,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             }
 
             // need to balance?
-            if (node.KeysNumber < _degree - 1)
+            if (node.KeysNumber < _degree)
             {
                 await BalanceAfterDeletion(node, key);
             }
@@ -345,8 +339,6 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             
             if (leftSibling != null)
             {
-                var outdatedKey = node.Keys[0];
-                
                 // merge node and leftSibling
                 for (var i = 0; i < node.KeysNumber; i++)
                 {
@@ -367,14 +359,11 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 _deletedNodes.Add(node);
                 _modifiedNodes.Add(leftSibling);
 
-                // UpdateKeysOnTheWayToRoot(leftSibling, key);
-//                UpdateKeysOnTheWayToRoot(leftSibling, outdatedKey);
-                var min = /*FindMinNode(node).Keys[0]; //*/node.Keys.Min();
+                //UpdateKeysOnTheWayToRoot(leftSibling, outdatedKey);
+                var min = node.Keys.Min();
                 await DeleteInNode(leftSibling.Parent, min);
             } else if (rightSibling != null)
             {
-                var outdatedKey = rightSibling.Keys[0];
-                
                 // merge node and rightSibling
                 for (var i = 0; i < rightSibling.KeysNumber; i++)
                 {
@@ -395,18 +384,8 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
                 _deletedNodes.Add(rightSibling);
                 _modifiedNodes.Add(node);
 
-                // UpdateKeysOnTheWayToRoot(node, key);
-//                UpdateKeysOnTheWayToRoot(node, outdatedKey);
-//                var parent = rightSibling.Parent;
-//                for (var i = 0; i < parent.KeysNumber; i++)
-//                {
-//                    if (parent.Keys[i] == rightSibling.Keys[0])
-//                    {
-//                        parent.Keys[i] = 
-//                    }
-//                }
-
-                var min = /*FindMinNode(rightSibling).Keys[0]; //*/rightSibling.Keys.Min();
+                //UpdateKeysOnTheWayToRoot(node, outdatedKey);
+                var min = rightSibling.Keys.Min();
                 await DeleteInNode(node.Parent, min);
             }
         }
@@ -478,7 +457,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             }
 
             var newRoot = Root.Children[0];
-            //if (newRoot == null) return;
+            if (newRoot == null) return;
             newRoot.Parent = null;
             Root = newRoot;
         }

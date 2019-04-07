@@ -412,7 +412,7 @@ namespace Jbta.VirtualFileSystem.Tests.UnitTests
         }
 
         [Fact]
-        public async Task Delete__DeleteOneKey_LeftAndRightSiblingsHasEqualNumberOfNodes__DeleteNode()
+        public async Task Delete__DeleteOneKey_LeftAndRightSiblingsHasEqualNumberOfNodes__True()
         {
             // arrange
             await SetupTree(3 * GlobalConstant.MinBPlusTreeDegree); // 3 children
@@ -423,14 +423,13 @@ namespace Jbta.VirtualFileSystem.Tests.UnitTests
 
             // assert
             Assert.True(result);
-            var root = _tree.Root;
         }
         
         [Fact]
         public async Task Delete__AddMany_DeleteAll__EmptyTree()
         {
             // arrange
-            const int size = 220;
+            const int size = 219;
             foreach (var i in Enumerable.Range(1, size))
             {
                 var number = i < 10 ? $"00{i}" : i < 100 ? $"0{i}" : i.ToString();
@@ -441,10 +440,6 @@ namespace Jbta.VirtualFileSystem.Tests.UnitTests
             // act
             foreach (var i in Enumerable.Range(1, size))
             {
-                if (i == 200)
-                {
-                    var _ = 0;
-                }
                 var number = i < 10 ? $"00{i}" : i < 100 ? $"0{i}" : i.ToString();
                 results.Add(await _tree.Delete($"foo{number}"));
             }
@@ -457,14 +452,15 @@ namespace Jbta.VirtualFileSystem.Tests.UnitTests
         public async Task Delete__AddMany_DeleteAll2__EmptyTree()
         {
             // arrange
-            foreach (var i in Enumerable.Range(1, 300))
+            const int size = 219;
+            foreach (var i in Enumerable.Range(1, size))
             {
                 await _tree.Insert($"foo{i}", i);
             }
             var results = new List<bool>();
 
             // act
-            foreach (var i in Enumerable.Range(1, 300))
+            foreach (var i in Enumerable.Range(1, size))
             {
                 results.Add(await _tree.Delete($"foo{i}"));
             }
