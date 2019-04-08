@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
+namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemManagerTests
 {
     public class MountedFileSystemsTests
     {

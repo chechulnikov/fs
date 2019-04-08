@@ -12,14 +12,15 @@ namespace Jbta.VirtualFileSystem.Tests.UnitTests
     public class BPlusTreeTests
     {
         private Mock<IBPlusTreeNodesPersistenceManager> _nodePersistenceManagerMock;
-        private readonly BPlusTreeNode _rootNode;
         private readonly BPlusTree _tree;
 
         public BPlusTreeTests()
         {
             _nodePersistenceManagerMock = new Mock<IBPlusTreeNodesPersistenceManager>();
-            _rootNode = new BPlusTreeNode();
-            _tree = new BPlusTree(_nodePersistenceManagerMock.Object, _rootNode);
+            _nodePersistenceManagerMock
+                .Setup(m => m.CreateNewNode())
+                .ReturnsAsync(() => new BPlusTreeNode());
+            _tree = new BPlusTree(_nodePersistenceManagerMock.Object, new BPlusTreeNode());
         }
         
         [Theory]
@@ -429,7 +430,7 @@ namespace Jbta.VirtualFileSystem.Tests.UnitTests
         public async Task Delete__AddMany_DeleteAll__EmptyTree()
         {
             // arrange
-            const int size = 219;
+            const int size = 200;
             foreach (var i in Enumerable.Range(1, size))
             {
                 var number = i < 10 ? $"00{i}" : i < 100 ? $"0{i}" : i.ToString();
@@ -442,27 +443,6 @@ namespace Jbta.VirtualFileSystem.Tests.UnitTests
             {
                 var number = i < 10 ? $"00{i}" : i < 100 ? $"0{i}" : i.ToString();
                 results.Add(await _tree.Delete($"foo{number}"));
-            }
-
-            // assert
-            Assert.All(results, Assert.True);
-        }
-        
-        [Fact]
-        public async Task Delete__AddMany_DeleteAll2__EmptyTree()
-        {
-            // arrange
-            const int size = 219;
-            foreach (var i in Enumerable.Range(1, size))
-            {
-                await _tree.Insert($"foo{i}", i);
-            }
-            var results = new List<bool>();
-
-            // act
-            foreach (var i in Enumerable.Range(1, size))
-            {
-                results.Add(await _tree.Delete($"foo{i}"));
             }
 
             // assert

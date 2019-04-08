@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
+namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemManagerTests
 {
     public class MountTests : BaseTests
     {

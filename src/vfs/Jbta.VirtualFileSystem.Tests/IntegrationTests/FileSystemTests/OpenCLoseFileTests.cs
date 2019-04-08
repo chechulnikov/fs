@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal;
@@ -7,15 +6,15 @@ using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
 {
-    public class CreateFileTests : BaseTests
+    public class OpenCloseFileTests : BaseTests
     {
         private readonly IFileSystem _fileSystem;
         
-        public CreateFileTests()
+        public OpenCloseFileTests()
         {
             _fileSystem = FileSystemManager.Mount(VolumePath);
         }
-        
+        // TODO !!!!!!!!
         [Fact]
         public Task CreateFile_UnmountedFileSystem_FileSystemException()
         {
@@ -57,27 +56,6 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
             Assert.NotNull(file);
             Assert.Equal(fileName, file.Name);
             Assert.Equal(GlobalConstant.DefaultBlockSize, file.Size);
-        }
-        
-        [Fact]
-        public async Task CreateFile_ManyFiles_OpensSuccessful()
-        {
-            // act
-            const int quantity = 100;
-            foreach (var i in Enumerable.Range(1, quantity))
-            {
-                await _fileSystem.CreateFile($"foo{i}");
-            }
-            
-            // assert
-            foreach (var i in Enumerable.Range(1, quantity))
-            {
-                var fileName = $"foo{i}";
-                var file = await _fileSystem.OpenFile(fileName);
-                Assert.NotNull(file);
-                Assert.Equal(fileName, file.Name);
-                Assert.Equal(GlobalConstant.DefaultBlockSize, file.Size);
-            }
         }
     }
 }

@@ -2,10 +2,10 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Threading.Tasks;
-using Xunit;
 using Jbta.VirtualFileSystem.Internal;
+using Xunit;
 
-namespace Jbta.VirtualFileSystem.Tests.FileSystemManagerTests
+namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemManagerTests
 {
     public class InitTests : IDisposable
     {

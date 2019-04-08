@@ -1,6 +1,6 @@
 using System;
 
-namespace Jbta.VirtualFileSystem.Tests
+namespace Jbta.VirtualFileSystem.Tests.IntegrationTests
 {
     public abstract class BaseTests : IDisposable
     {

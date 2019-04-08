@@ -9,7 +9,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing
         private readonly BPlusTree _tree;
         
         public FileSystemIndex(
-            BPlusTreeNodesPersistenceManager treeNodesPersistenceManager,
+            IBPlusTreeNodesPersistenceManager treeNodesPersistenceManager,
             IndexBlock rootIndexBlock,
             int rootIndexBlockNumber)
         {

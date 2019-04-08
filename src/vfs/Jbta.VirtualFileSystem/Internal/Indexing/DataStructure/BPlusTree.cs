@@ -14,7 +14,6 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
     {
         private readonly IBPlusTreeNodesPersistenceManager _nodesPersistenceManager;
         private readonly AsyncReaderWriterLock _locker;
-        private readonly ISet<IBPlusTreeNode> _newNodes;
         private readonly ISet<IBPlusTreeNode> _modifiedNodes;
         private readonly ISet<IBPlusTreeNode> _deletedNodes;
         private readonly int _degree;
@@ -23,7 +22,6 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
         {
             _nodesPersistenceManager = nodesPersistenceManager;
             _locker = new AsyncReaderWriterLock();
-            _newNodes = new HashSet<IBPlusTreeNode>();
             _modifiedNodes = new HashSet<IBPlusTreeNode>();
             _deletedNodes = new HashSet<IBPlusTreeNode>();
             _degree = GlobalConstant.MinBPlusTreeDegree;
@@ -123,7 +121,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 
         private async Task Split(IBPlusTreeNode node)
         {
-            var newNode = NewNode(); //await _nodesPersistenceManager.CreateNewNode();
+            var newNode = await _nodesPersistenceManager.CreateNewNode();
             
             // switch right and left siblings pointers
             newNode.RightSibling = node.RightSibling;
@@ -169,10 +167,10 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             if (node == Root)
             {
                 // create new Root node
-                Root = NewNode(); //await _nodesPersistenceManager.CreateNewNode();
+                Root = await _nodesPersistenceManager.CreateNewNode();
                 Root.Keys[0] = midKey;
                 Root.Children[0] = node;
-                Root.Children[1] = newNode; //await _nodesPersistenceManager.CreateNewNode();
+                Root.Children[1] = newNode;
                 Root.KeysNumber = 1;
                 node.Parent = Root;
                 newNode.Parent = Root;
@@ -442,13 +440,6 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             return position;
         }
 
-        private IBPlusTreeNode NewNode()
-        {
-            var node = new BPlusTreeNode();
-            _newNodes.Add(node);
-            return node;
-        }
-
         private void TryToShrinkTreeHeight()
         {
             if (Root.KeysNumber != 1)
@@ -464,10 +455,8 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 
         private async Task Persist()
         {
-            await _nodesPersistenceManager.CreateNodes(_newNodes);
             await _nodesPersistenceManager.UpdateNodes(_modifiedNodes);
             await _nodesPersistenceManager.DeleteNodes(_deletedNodes);
-            _newNodes.Clear();
             _modifiedNodes.Clear();
             _deletedNodes.Clear();
         }

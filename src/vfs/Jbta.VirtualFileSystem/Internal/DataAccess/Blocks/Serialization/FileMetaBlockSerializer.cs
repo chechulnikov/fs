@@ -37,14 +37,14 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks.Serialization
             var result = new FileMetaBlock();
 
             var offset = 0;
-            foreach (var i in Enumerable.Range(0, result.DirectBlocks.Length))
+            foreach (var i in Enumerable.Range(0, GlobalConstant.MaxFileDirectBlocksCount))
             {
                 result.DirectBlocks[i] = BitConverter.ToInt32(data, offset);
                 offset += sizeof(int);
             }
-            foreach (var i in Enumerable.Range(0, result.IndirectBlocks.Length))
+            foreach (var i in Enumerable.Range(0, GlobalConstant.MaxFileIndirectBlocksCount))
             {
-                result.DirectBlocks[i] = BitConverter.ToInt32(data, offset);
+                result.IndirectBlocks[i] = BitConverter.ToInt32(data, offset);
                 offset += sizeof(int);
             }
             

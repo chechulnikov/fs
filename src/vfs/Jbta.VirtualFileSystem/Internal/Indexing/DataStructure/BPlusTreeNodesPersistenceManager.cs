@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -50,11 +49,6 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             var blockData = await _volumeReader.ReadBlocks(blockNumber);
             var indexBlock = _indexBlockSerializer.Deserialize(blockData);
             return CreateFrom(indexBlock, blockNumber);
-        }
-
-        public Task CreateNodes(IEnumerable<IBPlusTreeNode> nodes)
-        {
-            throw new NotImplementedException();
         }
 
         public Task UpdateNodes(IEnumerable<IBPlusTreeNode> nodes) => Task.WhenAll(nodes.Select(SaveNode));

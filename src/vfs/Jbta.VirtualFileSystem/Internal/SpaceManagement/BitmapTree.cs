@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,7 +40,18 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         }
 
         public int SetBitsCount { get; private set; }
-        
+
+        public int SetBitsCount2
+        {
+            get
+            {
+                var res = 0;
+                for (var i = 0; i < _dataLength; i++)
+                    if (this[i]) res++;
+                return res;
+            }
+        }
+
         public bool TrySetBit(int bitNumber)
         {
            if (this[bitNumber]) return false;
@@ -67,7 +79,9 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             var bitsInBlock = _blockSize * 8;
             var booleansBuffer = new bool[8];
 
-            var bitmapBlocksNumbers = bitNumbers.Select(bm => bm.DivideWithUpRounding(_blockSize)).ToArray();
+            var bitmapBlocksNumbers = bitNumbers
+                .Select(bm => bm < bitsInBlock ? 0 : bm.DivideWithUpRounding(bitsInBlock))
+                .ToArray();
             
             var result = new byte[bitmapBlocksNumbers.Length * _blockSize];
             
@@ -97,13 +111,22 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             set
             {
                 var position = _dataLength + bitNumber;
-                var divisor = 1;
-                while (position >= 1)
+                _tree[position] = value;
+                
+                while (position >= 2)
                 {
-                    _tree[position] = value;
-                    
-                    divisor *= 2;
-                    position /= divisor;
+                    var t = position % 2 == 0
+                        ? TreeOperation(_tree[position], _tree[position + 1])
+                        : TreeOperation(_tree[position - 1], _tree[position]);
+
+                    position /= 2;
+
+                    if (_tree[position] == t)
+                    {
+                        break;
+                    }
+
+                    _tree[position] = t;
                 }
             }
         }
