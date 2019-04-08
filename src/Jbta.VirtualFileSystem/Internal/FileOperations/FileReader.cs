@@ -97,15 +97,8 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
 
                 var bytesInChunk = blocksCountInChunk * _fileSystemMeta.BlockSize;
 
-                try
-                {
-                    var memory = new Memory<byte>(buffer, bufferOffset, bytesInChunk);
-                    await _volumeReader.ReadBlocksToBuffer(memory, startBlockNumberInChunk);
-                }
-                catch (Exception e)
-                {
-                    var _ = 0;
-                }
+                var memory = new Memory<byte>(buffer, bufferOffset, bytesInChunk);
+                await _volumeReader.ReadBlocksToBuffer(memory, startBlockNumberInChunk);
                 
                 bufferOffset += bytesInChunk;
 
