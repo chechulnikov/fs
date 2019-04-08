@@ -4,7 +4,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 {
     internal class PersistentBPlusTreeNode : IBPlusTreeNode
     {
-        private const int MaxKeysPerNode = GlobalConstant.MinBPlusTreeDegree;
+        private const int MaxKeysPerNode = 2 * GlobalConstant.MinBPlusTreeDegree;
         private readonly BPlusTreeNodesPersistenceManager _nodesPersistenceManager;
         private IBPlusTreeNode _parent;
         private IBPlusTreeNode _leftSibling;

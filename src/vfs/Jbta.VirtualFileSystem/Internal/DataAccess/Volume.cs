@@ -22,7 +22,7 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
         {
             if (startBlockNumber < 0) throw new ArgumentOutOfRangeException(nameof(startBlockNumber));
             
-            using (var stream = System.IO.File.OpenRead(VolumePath))
+            using (var stream = System.IO.File.Open(VolumePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 stream.Seek(startBlockNumber * _blockSize, SeekOrigin.Begin);
                 await stream.ReadAsync(buffer);
@@ -36,7 +36,7 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
             if (blocksCount <= 0) throw new ArgumentOutOfRangeException(nameof(blocksCount));
 
             var buffer = new byte[blocksCount * _blockSize]; // TODO byte[] pool?
-            using (var stream = System.IO.File.OpenRead(VolumePath))
+            using (var stream = System.IO.File.Open(VolumePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 stream.Seek(startBlockNumber * _blockSize, SeekOrigin.Begin);
                 await stream.ReadAsync(buffer);
@@ -49,7 +49,7 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
             if (data.Length % _blockSize != 0)
                 throw new FileSystemException("Invalid data size");
 
-            using (var stream = System.IO.File.OpenWrite(VolumePath))
+            using (var stream = System.IO.File.Open(VolumePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 stream.Seek(blockNumber * _blockSize, SeekOrigin.Begin);
                 await stream.WriteAsync(data);
@@ -61,7 +61,7 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
             if (data.Length % _blockSize != 0)
                 throw new FileSystemException("Invalid data size");
 
-            using (var stream = System.IO.File.OpenWrite(VolumePath))
+            using (var stream = System.IO.File.Open(VolumePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 var startBlockNumberInChunk = blocksNumbers[0];
                 var blocksCountInChunk = 1;

@@ -138,10 +138,17 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             {
                 newNode.Keys[i] = node.Keys[i + _degree + 1];
                 newNode.Values[i] = node.Values[i + _degree + 1];
-                newNode.Children[i] = node.Children[i + _degree + 1];
-                node.Keys[i + _degree + 1] = null;
-                node.Values[i + _degree + 1] = 0;
-                node.Children[i + _degree + 1] = null;
+                try
+                {
+                    newNode.Children[i] = node.Children[i + _degree + 1];
+                    node.Keys[i + _degree + 1] = null;
+                    node.Values[i + _degree + 1] = 0;
+                    node.Children[i + _degree + 1] = null;
+                }
+                catch (Exception e)
+                {
+                    var _ = 0;
+                }
             }
             newNode.Children[newNode.KeysNumber] = node.Children[2 * _degree];
             node.Children[2 * _degree] = null;
