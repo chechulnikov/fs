@@ -130,5 +130,42 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             Assert.Equal(originalContent, Encoding.ASCII.GetString(data));
             Assert.Equal(size + GlobalConstant.DefaultBlockSize, await _file.Size);
         }
+        
+        [Fact]
+        public async Task Write_MaxSizeFile_ExpectedContent()
+        {
+            // arrange
+            const int dataBlocksCount =
+                GlobalConstant.MaxFileDirectBlocksCount
+                + GlobalConstant.MaxFileIndirectBlocksCount * GlobalConstant.DefaultBlockSize / sizeof(int);
+            const int size = GlobalConstant.DefaultBlockSize * dataBlocksCount;
+            var originalContent = RandomString.Generate(size);
+            var bytes = Encoding.ASCII.GetBytes(originalContent);
+            
+            // act
+            await _file.Write(0, bytes);
+            
+            // assert
+            var data = (await _file.Read(0, originalContent.Length)).ToArray();
+            Assert.NotNull(data);
+            Assert.Equal(originalContent.Length, data.Length);
+            Assert.Equal(originalContent, Encoding.ASCII.GetString(data));
+            Assert.Equal(size + GlobalConstant.DefaultBlockSize, await _file.Size);
+        }
+        
+        [Fact]
+        public Task Write_MaxSizeFileExceeded_FileSystemException()
+        {
+            // arrange
+            const int dataBlocksCount =
+                GlobalConstant.MaxFileDirectBlocksCount
+                + GlobalConstant.MaxFileIndirectBlocksCount * GlobalConstant.DefaultBlockSize / sizeof(int) + 1;
+            const int size = GlobalConstant.DefaultBlockSize * dataBlocksCount;
+            var originalContent = RandomString.Generate(size);
+            var bytes = Encoding.ASCII.GetBytes(originalContent);
+            
+            // act, assert
+            return Assert.ThrowsAsync<FileSystemException>(() => _file.Write(0, bytes));
+        }
     }
 }

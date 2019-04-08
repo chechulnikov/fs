@@ -3,6 +3,7 @@ using System.Buffers;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 using Jbta.VirtualFileSystem.Internal.SpaceManagement;
@@ -34,8 +35,18 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
 
         private int IndirectBlockCapacity => _fileSystemMeta.BlockSize / sizeof(int);
 
+        private int MaxFileDataSize =>
+            (GlobalConstant.MaxFileDirectBlocksCount
+            + GlobalConstant.MaxFileIndirectBlocksCount * IndirectBlockCapacity)
+            * _fileSystemMeta.BlockSize;
+
         public async Task Write(FileMetaBlock fileMetaBlock, int offsetInBytes, byte[] data)
         {
+            if (offsetInBytes + data.Length > MaxFileDataSize)
+            {
+                throw new FileSystemException($"File cannot contain more, than {MaxFileDataSize} bytes");
+            }
+            
             var startBlockNumberInFile = BytesToBlockNumber(offsetInBytes);
             var blocksCountForWriting = BytesToBlockNumber(data.Length);
             
@@ -102,7 +113,7 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
                 if (blocksNumbersForIndirectPlacement.Any())
                 {
                     var countOfIndirectBlocks = blocksNumbersForIndirectPlacement.Length.DivideWithUpRounding(IndirectBlockCapacity);
-                    var reservedIndirectBlocksNumbers = await _blocksAllocator.AllocateBytes(countOfIndirectBlocks);
+                    var reservedIndirectBlocksNumbers = await _blocksAllocator.AllocateBlocks(countOfIndirectBlocks);
 
                     var newIndirectBlocksData = AdjustDataToBlockSize(
                         blocksNumbersForIndirectPlacement.ToByteArray(), countOfIndirectBlocks);
