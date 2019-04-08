@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
 
@@ -60,15 +61,24 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
         {
             if (data.Length % _blockSize != 0)
                 throw new FileSystemException("Invalid data size");
+            
+            var blocksCount = blocksNumbers.Count;
+            
+            if (blocksCount == 1)
+            {
+                await WriteBlock(data, blocksNumbers.First());
+                return;
+            }
 
             using (var stream = System.IO.File.Open(VolumePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 var startBlockNumberInChunk = blocksNumbers[0];
                 var blocksCountInChunk = 1;
                 var bufferOffset = 0;
-                for (var i = 1; i < blocksNumbers.Count; i++)
+                
+                for (var i = 1; i < blocksCount; i++)
                 {
-                    if (blocksNumbers[i - 1] + 1 == blocksNumbers[i] && i != blocksNumbers.Count - 1)
+                    if (blocksNumbers[i - 1] + 1 == blocksNumbers[i] && i != blocksCount - 1)
                     {
                         blocksCountInChunk++;
                         continue;
@@ -80,7 +90,7 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
 
                     startBlockNumberInChunk = blocksNumbers[i];
                     blocksCountInChunk = 1;
-                    
+
                     bufferOffset += bytesInChunk;
                 }
             }

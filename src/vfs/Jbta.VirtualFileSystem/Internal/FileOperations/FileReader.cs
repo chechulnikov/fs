@@ -85,9 +85,13 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
         {
             var startBlockNumberInChunk = blocksNumbers[startBlockIndex];
             var blocksCountInChunk = 1;
-            for (var i = startBlockIndex; i < blocksCount; i++)
+//            for (var i = startBlockIndex + 1; i <= blocksCount; i++)
+//            {
+            var i = startBlockIndex;
+            do
             {
-                if (blocksNumbers[i - 1] + 1 == blocksNumbers[i])
+                i++;
+                if (i > 0 && blocksNumbers[i - 1] + 1 == blocksNumbers[i])
                 {
                     blocksCountInChunk++;
                     continue;
@@ -95,13 +99,13 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
 
                 var length = blocksCountInChunk * _fileSystemMeta.BlockSize;
                 var memory = new Memory<byte>(buffer, bufferOffset, length);
-                
+
                 await _volumeReader.ReadBlocksToBuffer(memory, startBlockNumberInChunk);
 
                 startBlockNumberInChunk = blocksNumbers[i];
                 blocksCountInChunk = 1;
                 bufferOffset += length + 1;
-            }
+            } while (i < blocksCount);
 
             return bufferOffset;
         }

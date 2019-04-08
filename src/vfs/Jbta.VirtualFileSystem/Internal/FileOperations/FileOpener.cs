@@ -36,6 +36,7 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             
             var fileMetaBlockData = await _volumeReader.ReadBlocks(fileMetaBlockNumber);
             var fileMetaBlock = _fileMetaBlockSerializer.Deserialize(fileMetaBlockData);
+            fileMetaBlock.BlockNumber = fileMetaBlockNumber;
             return _fileFactory.New(fileMetaBlock, fileName);
         }
     }

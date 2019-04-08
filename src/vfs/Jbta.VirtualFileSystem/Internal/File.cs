@@ -38,7 +38,9 @@ namespace Jbta.VirtualFileSystem.Internal
             get
             {
                 if (IsClosed)
+                {
                     throw new FileSystemException("Cannot get size info from closed file");
+                }
                 
                 var fileMetaBlockSize = _fileSystemMeta.BlockSize;
                 var indirectBlockCapacity = _fileSystemMeta.BlockSize / sizeof(int);
@@ -52,6 +54,8 @@ namespace Jbta.VirtualFileSystem.Internal
         public Task<Memory<byte>> Read(int offset, int length)
         {
             if (IsClosed) throw new FileSystemException("Cannot read from closed file");
+            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (length <= 0) throw new ArgumentOutOfRangeException(nameof(length));
 
             using (_locker.ReaderLock())
             {
@@ -62,6 +66,8 @@ namespace Jbta.VirtualFileSystem.Internal
         public Task Write(int offset, byte[] data)
         {
             if (IsClosed) throw new FileSystemException("Cannot write to closed file");
+            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (data == null || data.Length == 0) throw new ArgumentException(nameof(data));
 
             using (_locker.WriterLock())
             {

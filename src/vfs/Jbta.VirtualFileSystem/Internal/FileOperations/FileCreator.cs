@@ -33,10 +33,9 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             {
                 throw new FileSystemException($"File \"{fileName}\" has already existed");
             }
-            
-            var fileMetaBlock = new FileMetaBlock();
-            
+
             var fileMetaBlockNumber = await _blocksAllocator.AllocateBlock();
+            var fileMetaBlock = new FileMetaBlock { BlockNumber = fileMetaBlockNumber };
             var fileMetaBlockData = _fileMetaBlockSerializer.Serialize(fileMetaBlock);
             await _volumeWriter.WriteBlock(fileMetaBlockData, fileMetaBlockNumber);
 

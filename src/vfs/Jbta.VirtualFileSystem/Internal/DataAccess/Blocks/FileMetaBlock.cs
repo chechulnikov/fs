@@ -11,6 +11,8 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks
             IndirectBlocks = new int[GlobalConstant.MaxFileIndirectBlocksCount];
         }
         
+        public int BlockNumber { get; set; }
+        
         public int DirectBlocksCount { get; set; }
         
         public int IndirectBlocksCount { get; set; }

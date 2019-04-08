@@ -49,7 +49,9 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
         private async Task<FileMetaBlock> LoadFileMetaBlock(int fileMetaBlockNumber)
         {
             var fileMetaBlockData = await _volumeReader.ReadBlocks(fileMetaBlockNumber);
-            return _fileMetaBlockDeserializer.Deserialize(fileMetaBlockData);
+            var fileMetaBlock = _fileMetaBlockDeserializer.Deserialize(fileMetaBlockData);
+            fileMetaBlock.BlockNumber = fileMetaBlockNumber;
+            return fileMetaBlock;
         }
 
         private async Task<IReadOnlyList<int>> LoadAllBLocksNumbers(int fileMetaBlockNumber)
