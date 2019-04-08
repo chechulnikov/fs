@@ -39,7 +39,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         [Theory]
         [InlineData("12345678901234567")]
         [InlineData(" 12345678901234567   ")]
-        public Task CreateFile_TooLargeFileName_FileSystemException(string fileName)
+        public Task CreateFile_TooLargeFileName_ArgumentException(string fileName)
         {
             // act, assert
             return Assert.ThrowsAsync<ArgumentException>(() => _fileSystem.CreateFile(fileName));

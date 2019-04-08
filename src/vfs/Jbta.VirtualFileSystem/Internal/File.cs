@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 using Jbta.VirtualFileSystem.Internal.FileOperations;
 using Jbta.VirtualFileSystem.Utils;
@@ -36,6 +37,9 @@ namespace Jbta.VirtualFileSystem.Internal
         {
             get
             {
+                if (IsClosed)
+                    throw new FileSystemException("Cannot get size info from closed file");
+                
                 var fileMetaBlockSize = _fileSystemMeta.BlockSize;
                 var indirectBlockCapacity = _fileSystemMeta.BlockSize / sizeof(int);
                 var dataBlocksCount = _fileMetaBlock.DirectBlocksCount + _fileMetaBlock.IndirectBlocksCount * indirectBlockCapacity;
@@ -43,8 +47,12 @@ namespace Jbta.VirtualFileSystem.Internal
             }
         }
 
+        public bool IsClosed { get; private set; }
+
         public Task<Memory<byte>> Read(int offset, int length)
         {
+            if (IsClosed) throw new FileSystemException("Cannot read from closed file");
+
             using (_locker.ReaderLock())
             {
                 return _reader.Read(_fileMetaBlock, offset, length);
@@ -53,12 +61,18 @@ namespace Jbta.VirtualFileSystem.Internal
 
         public Task Write(int offset, byte[] data)
         {
+            if (IsClosed) throw new FileSystemException("Cannot write to closed file");
+
             using (_locker.WriterLock())
             {
                 return _writer.Write(_fileMetaBlock, offset, data);
             }
         }
 
-        public void Dispose() => _locker?.Dispose();
+        public void Dispose()
+        {
+            _locker?.Dispose();
+            IsClosed = true;
+        }
     }
 }

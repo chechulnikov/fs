@@ -11,6 +11,8 @@ namespace Jbta.VirtualFileSystem
         string Name { get; }
         
         int Size { get; }
+        
+        bool IsClosed { get; }
 
         /// <summary>
         /// Method for reading content from the file
