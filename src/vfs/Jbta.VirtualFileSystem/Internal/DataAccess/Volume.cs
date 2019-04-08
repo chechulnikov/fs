@@ -76,9 +76,9 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
                 var blocksCountInChunk = 1;
                 var bufferOffset = 0;
                 
-                for (var i = 1; i < blocksCount; i++)
+                for (var i = 1; i <= blocksCount; i++)
                 {
-                    if (blocksNumbers[i - 1] + 1 == blocksNumbers[i] && i != blocksCount - 1)
+                    if (i < blocksCount && blocksNumbers[i - 1] + 1 == blocksNumbers[i])
                     {
                         blocksCountInChunk++;
                         continue;
@@ -88,6 +88,10 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
                     stream.Seek(startBlockNumberInChunk * _blockSize, SeekOrigin.Begin);
                     await stream.WriteAsync(data, bufferOffset, bytesInChunk);
 
+                    if (i >= blocksCount)
+                    {
+                        break;
+                    }
                     startBlockNumberInChunk = blocksNumbers[i];
                     blocksCountInChunk = 1;
 

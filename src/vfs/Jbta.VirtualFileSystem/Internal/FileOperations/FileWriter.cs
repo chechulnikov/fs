@@ -78,8 +78,11 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             if (addingBlocksCount > 0)
             {
                 // 2.0. write data blocks
-                Array.Resize(ref blocksData, _fileSystemMeta.BlockSize * addingBlocksCount);
-                
+                if (blocksData.Length % _fileSystemMeta.BlockSize != 0)
+                {
+                    Array.Resize(ref blocksData, _fileSystemMeta.BlockSize * addingBlocksCount);
+                }
+
                 var reservedBlocksNumbers = await _blocksAllocator.AllocateBlocks(addingBlocksCount);
                 await _volumeWriter.WriteBlocks(blocksData, reservedBlocksNumbers);
                 
