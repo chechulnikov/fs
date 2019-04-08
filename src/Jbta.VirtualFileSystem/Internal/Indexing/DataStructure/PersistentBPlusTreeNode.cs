@@ -5,14 +5,14 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 {
     internal class PersistentBPlusTreeNode : IBPlusTreeNode
     {
-        private readonly BPlusTreeNodesPersistenceManager _nodesPersistenceManager;
+        private readonly IBPlusTreeNodesPersistenceManager _nodesPersistenceManager;
         private IBPlusTreeNode _parent;
         private IBPlusTreeNode _leftSibling;
         private IBPlusTreeNode _rightSibling;
         private IBPlusTreeNode[] _children;
 
         public PersistentBPlusTreeNode(
-            BPlusTreeNodesPersistenceManager nodesPersistenceManager,
+            IBPlusTreeNodesPersistenceManager nodesPersistenceManager,
             IndexBlock indexIndexBlock,
             int blockNumber)
         {
@@ -41,23 +41,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 
         public int[] Values => IndexBlock.Values;
 
-        public IBPlusTreeNode[] Children
-        {
-            get
-            {
-                if (_children != null)
-                {
-                    return _children;
-                }
-
-                _children =  IndexBlock.ChildrenBlockNumbers
-                    .Take(IndexBlock.KeysNumber + 1)
-                    .Select(LoadNode)
-                    .ToArray();
-                
-                return _children;
-            }
-        }
+        public IBPlusTreeNode[] Children => _children ?? (_children = LoadChildren());
 
         public IBPlusTreeNode Parent
         {
@@ -79,5 +63,17 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 
         private IBPlusTreeNode LoadNode(int blockNumber) =>
             blockNumber == 0 ? null : _nodesPersistenceManager.LoadNode(blockNumber).Result;
+
+        private IBPlusTreeNode[] LoadChildren()
+        {
+            var result = new IBPlusTreeNode[2 * GlobalConstant.MinBPlusTreeDegree + 1];
+            var blockNumbers = IndexBlock.ChildrenBlockNumbers.Take(IndexBlock.KeysNumber + 1).ToArray();
+            for (var i = 0; i < blockNumbers.Length; i++)
+            {
+                result[i] = LoadNode(blockNumbers[i]);
+            }
+
+            return result;
+        }
     }
 }
