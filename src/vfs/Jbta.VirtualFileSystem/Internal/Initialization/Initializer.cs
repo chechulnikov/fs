@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
-using Jbta.VirtualFileSystem.Utils;
+using Jbta.VirtualFileSystem.Internal.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.Initialization
 {

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal.FileOperations;
 using Jbta.VirtualFileSystem.Internal.Mounting;
-using Jbta.VirtualFileSystem.Utils;
+using Jbta.VirtualFileSystem.Internal.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal
 {
@@ -55,15 +55,7 @@ namespace Jbta.VirtualFileSystem.Internal
             return _fileCreator.CreateFile(fileName);
         }
 
-        public async Task DeleteFile(string fileName)
-        {
-            if (!await TryDeleteFile(fileName))
-            {
-                throw new FileSystemException("Can not delete opened file");
-            }
-        }
-
-        public async Task<bool> TryDeleteFile(string fileName)
+        public async Task<bool> DeleteFile(string fileName)
         {
             CheckFileSystemState();
             fileName = CheckAndPrepareFileName(fileName);

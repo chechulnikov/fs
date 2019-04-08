@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using Jbta.VirtualFileSystem.Utils;
+using Jbta.VirtualFileSystem.Internal.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks.Serialization
 {

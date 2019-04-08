@@ -8,10 +8,19 @@ namespace Jbta.VirtualFileSystem
     /// </summary>
     public interface IFile : IDisposable
     {
+        /// <summary>
+        /// File name (max 16 characters)
+        /// </summary>
         string Name { get; }
         
+        /// <summary>
+        /// Size of file in bytes
+        /// </summary>
         Task<int> Size { get; }
         
+        /// <summary>
+        /// True if file has closed
+        /// </summary>
         bool IsClosed { get; }
 
         /// <summary>

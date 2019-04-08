@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 
-namespace Jbta.VirtualFileSystem.Utils
+namespace Jbta.VirtualFileSystem.Internal.Utils
 {
     internal static class RandomString
     {

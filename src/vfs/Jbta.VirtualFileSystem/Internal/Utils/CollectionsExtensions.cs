@@ -1,6 +1,6 @@
 using System;
 
-namespace Jbta.VirtualFileSystem.Utils
+namespace Jbta.VirtualFileSystem.Internal.Utils
 {
     internal static class CollectionsExtensions
     {

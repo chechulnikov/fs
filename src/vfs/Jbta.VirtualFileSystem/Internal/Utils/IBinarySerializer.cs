@@ -1,4 +1,4 @@
-namespace Jbta.VirtualFileSystem.Utils
+namespace Jbta.VirtualFileSystem.Internal.Utils
 {
     internal interface IBinarySerializer<T>
     {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Jbta.VirtualFileSystem.Utils
+namespace Jbta.VirtualFileSystem.Internal.Utils
 {
     internal static class BoolArrayExtensions
     {

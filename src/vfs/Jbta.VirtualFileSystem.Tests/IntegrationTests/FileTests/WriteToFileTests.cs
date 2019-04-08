@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal;
-using Jbta.VirtualFileSystem.Utils;
+using Jbta.VirtualFileSystem.Internal.Utils;
 using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
@@ -166,6 +166,28 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             
             // act, assert
             return Assert.ThrowsAsync<FileSystemException>(() => _file.Write(0, bytes));
+        }
+        
+        [Fact]
+        public async Task Write_AppendingInFile_ExpectedContent()
+        {
+            // arrange
+            const int length = 4242;
+            var originalContent1 = RandomString.Generate(length);
+            var originalContent2 = RandomString.Generate(length);
+            var bytes1 = Encoding.ASCII.GetBytes(originalContent1);
+            var bytes2 = Encoding.ASCII.GetBytes(originalContent2);
+            await _file.Write(0, bytes1);
+            
+            // act
+            await _file.Write(length, bytes2);
+            
+            // assert
+            var data = (await _file.Read(0, 2 * length)).ToArray();
+            Assert.NotNull(data);
+            Assert.Equal(2 * length, data.Length);
+            Assert.Equal(originalContent1 + originalContent2, Encoding.ASCII.GetString(data));
+            Assert.Equal(2 * length * GlobalConstant.DefaultBlockSize, await _file.Size);
         }
     }
 }

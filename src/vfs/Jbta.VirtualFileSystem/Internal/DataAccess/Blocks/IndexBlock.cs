@@ -5,7 +5,7 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks
         public IndexBlock()
         {
             Keys = new string[2 * GlobalConstant.MinBPlusTreeDegree];
-            Pointers = new int[2 * GlobalConstant.MinBPlusTreeDegree];
+            Values = new int[2 * GlobalConstant.MinBPlusTreeDegree];
             ChildrenBlockNumbers = new int[2 * GlobalConstant.MinBPlusTreeDegree + 1];
         }
         
@@ -17,7 +17,7 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess.Blocks
         
         public int[] ChildrenBlockNumbers { get; set; }
         
-        public int[] Pointers { get; set; }
+        public int[] Values { get; set; }
         
         public int ParentBlockNumber { get; set; }
         

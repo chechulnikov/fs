@@ -1,14 +1,15 @@
+using System.Linq;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 
 namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 {
     internal class PersistentBPlusTreeNode : IBPlusTreeNode
     {
-        private const int MaxKeysPerNode = 2 * GlobalConstant.MinBPlusTreeDegree;
         private readonly BPlusTreeNodesPersistenceManager _nodesPersistenceManager;
         private IBPlusTreeNode _parent;
         private IBPlusTreeNode _leftSibling;
         private IBPlusTreeNode _rightSibling;
+        private IBPlusTreeNode[] _children;
 
         public PersistentBPlusTreeNode(
             BPlusTreeNodesPersistenceManager nodesPersistenceManager,
@@ -16,7 +17,6 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             int blockNumber)
         {
             _nodesPersistenceManager = nodesPersistenceManager;
-            Children = new IBPlusTreeNode[MaxKeysPerNode + 1];
             IndexBlock = indexIndexBlock;
             BlockNumber = blockNumber;
         }
@@ -39,58 +39,45 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
 
         public string[] Keys => IndexBlock.Keys;
 
-        public int[] Values => IndexBlock.Pointers;
-        
-        public IBPlusTreeNode[] Children { get; }
+        public int[] Values => IndexBlock.Values;
+
+        public IBPlusTreeNode[] Children
+        {
+            get
+            {
+                if (_children != null)
+                {
+                    return _children;
+                }
+
+                _children =  IndexBlock.ChildrenBlockNumbers
+                    .Take(IndexBlock.KeysNumber + 1)
+                    .Select(LoadNode)
+                    .ToArray();
+                
+                return _children;
+            }
+        }
 
         public IBPlusTreeNode Parent
         {
-            get => _parent ?? (_parent = _nodesPersistenceManager.LoadNode(IndexBlock.ParentBlockNumber).Result);
+            get => _parent ?? (_parent = LoadNode(IndexBlock.ParentBlockNumber));
             set => _parent = value;
         }
 
         public IBPlusTreeNode LeftSibling
         {
-            get => _leftSibling ?? (_leftSibling = _nodesPersistenceManager.LoadNode(IndexBlock.LeftSiblingBlockNumber).Result);
+            get => _leftSibling ?? (_leftSibling = LoadNode(IndexBlock.LeftSiblingBlockNumber));
             set => _leftSibling = value;
         }
 
         public IBPlusTreeNode RightSibling
         {
-            get => _rightSibling ?? (_rightSibling = _nodesPersistenceManager.LoadNode(IndexBlock.RightSiblingBlockNumber).Result);
+            get => _rightSibling ?? (_rightSibling = LoadNode(IndexBlock.RightSiblingBlockNumber));
             set => _rightSibling = value;
         }
 
-//        public async Task<IBPlusTreeNode> GetParent() =>
-//            _parent ?? (_parent = await _nodesPersistenceManager.LoadNode(IndexBlock.ParentBlockNumber));
-//
-//        public Task SetParent(IBPlusTreeNode node) 
-//        {
-//            _parent = node;
-//            return _nodesPersistenceManager.SaveNode(node);
-//        }
-//        
-//        public async Task<IBPlusTreeNode> GetLeftSibling() =>
-//            _leftSibling ?? (_leftSibling = await _nodesPersistenceManager.LoadNode(IndexBlock.LeftSiblingBlockNumber));
-
-//        public Task SetLeftSibling(IBPlusTreeNode node) 
-//        {
-//            _leftSibling = node;
-//            return _nodesPersistenceManager.SaveNode(node);
-//        }
-//        
-//        public async Task<IBPlusTreeNode> GetRightSibling() =>
-//            _rightSibling ?? (_rightSibling = await _nodesPersistenceManager.LoadNode(IndexBlock.RightSiblingBlockNumber));
-//
-//        public Task SetRightSibling(IBPlusTreeNode node) 
-//        {
-//            _rightSibling = node;
-//            return _nodesPersistenceManager.SaveNode(node);
-//        }
-//
-//        private async Task Save()
-//        {
-//            
-//        }
+        private IBPlusTreeNode LoadNode(int blockNumber) =>
+            blockNumber == 0 ? null : _nodesPersistenceManager.LoadNode(blockNumber).Result;
     }
 }

@@ -11,16 +11,15 @@ namespace Jbta.VirtualFileSystem.Tests.UnitTests
 {
     public class BPlusTreeTests
     {
-        private Mock<IBPlusTreeNodesPersistenceManager> _nodePersistenceManagerMock;
         private readonly BPlusTree _tree;
 
         public BPlusTreeTests()
         {
-            _nodePersistenceManagerMock = new Mock<IBPlusTreeNodesPersistenceManager>();
-            _nodePersistenceManagerMock
+            var nodePersistenceManagerMock = new Mock<IBPlusTreeNodesPersistenceManager>();
+            nodePersistenceManagerMock
                 .Setup(m => m.CreateNewNode())
                 .ReturnsAsync(() => new BPlusTreeNode());
-            _tree = new BPlusTree(_nodePersistenceManagerMock.Object, new BPlusTreeNode());
+            _tree = new BPlusTree(nodePersistenceManagerMock.Object, new BPlusTreeNode());
         }
         
         [Theory]
