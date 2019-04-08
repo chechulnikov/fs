@@ -10,7 +10,7 @@ namespace Jbta.VirtualFileSystem
     {
         string Name { get; }
         
-        int Size { get; }
+        Task<int> Size { get; }
         
         bool IsClosed { get; }
 

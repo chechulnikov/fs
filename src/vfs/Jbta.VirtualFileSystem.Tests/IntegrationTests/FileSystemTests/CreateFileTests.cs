@@ -56,7 +56,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
             var file = await _fileSystem.OpenFile(fileName);
             Assert.NotNull(file);
             Assert.Equal(fileName, file.Name);
-            Assert.Equal(GlobalConstant.DefaultBlockSize, file.Size);
+            Assert.Equal(GlobalConstant.DefaultBlockSize, await file.Size);
         }
         
         [Fact]
@@ -76,7 +76,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
                 var file = await _fileSystem.OpenFile(fileName);
                 Assert.NotNull(file);
                 Assert.Equal(fileName, file.Name);
-                Assert.Equal(GlobalConstant.DefaultBlockSize, file.Size);
+                Assert.Equal(GlobalConstant.DefaultBlockSize, await file.Size);
             }
         }
     }

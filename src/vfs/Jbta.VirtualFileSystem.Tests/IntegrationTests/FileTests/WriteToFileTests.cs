@@ -70,7 +70,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             Assert.Equal(originalContent.Length, data.Length);
             var content = Encoding.ASCII.GetString(data);
             Assert.Equal(originalContent, content);
-            Assert.Equal(2 * GlobalConstant.DefaultBlockSize, _file.Size);
+            Assert.Equal(2 * GlobalConstant.DefaultBlockSize, await _file.Size);
         }
         
         [Fact]
@@ -88,11 +88,11 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             Assert.NotNull(data);
             Assert.Equal(originalContent.Length, data.Length);
             Assert.Equal(originalContent, Encoding.ASCII.GetString(data));
-            Assert.Equal(2 * GlobalConstant.DefaultBlockSize, _file.Size);
+            Assert.Equal(2 * GlobalConstant.DefaultBlockSize, await _file.Size);
         }
         
         [Fact]
-        public async Task Write_AllDirectBlocksBlocks_ExpectedContent()
+        public async Task Write_AllDirectBlocks_ExpectedContent()
         {
             // arrange
             const int blocksCount = GlobalConstant.MaxFileDirectBlocksCount;
@@ -108,7 +108,27 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             Assert.NotNull(data);
             Assert.Equal(originalContent.Length, data.Length);
             Assert.Equal(originalContent, Encoding.ASCII.GetString(data));
-            Assert.Equal(size + GlobalConstant.DefaultBlockSize, _file.Size);
+            Assert.Equal(size + GlobalConstant.DefaultBlockSize, await _file.Size);
+        }
+        
+        [Fact]
+        public async Task Write_DirectAndOneIndirectBlocks_ExpectedContent()
+        {
+            // arrange
+            const int dataBlocksCount = GlobalConstant.MaxFileDirectBlocksCount + 42;
+            const int size = GlobalConstant.DefaultBlockSize * dataBlocksCount;
+            var originalContent = RandomString.Generate(size);
+            var bytes = Encoding.ASCII.GetBytes(originalContent);
+            
+            // act
+            await _file.Write(0, bytes);
+            
+            // assert
+            var data = (await _file.Read(0, originalContent.Length)).ToArray();
+            Assert.NotNull(data);
+            Assert.Equal(originalContent.Length, data.Length);
+            Assert.Equal(originalContent, Encoding.ASCII.GetString(data));
+            Assert.Equal(size + GlobalConstant.DefaultBlockSize, await _file.Size);
         }
     }
 }

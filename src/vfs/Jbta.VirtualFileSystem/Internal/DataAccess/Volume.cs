@@ -87,15 +87,15 @@ namespace Jbta.VirtualFileSystem.Internal.DataAccess
                     var bytesInChunk = blocksCountInChunk * _blockSize;
                     stream.Seek(startBlockNumberInChunk * _blockSize, SeekOrigin.Begin);
                     await stream.WriteAsync(data, bufferOffset, bytesInChunk);
-
+                    
+                    bufferOffset += bytesInChunk;
+                    
                     if (i >= blocksCount)
                     {
                         break;
                     }
                     startBlockNumberInChunk = blocksNumbers[i];
                     blocksCountInChunk = 1;
-
-                    bufferOffset += bytesInChunk;
                 }
             }
         }

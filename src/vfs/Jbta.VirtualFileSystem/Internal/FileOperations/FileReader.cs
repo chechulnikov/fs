@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
@@ -19,6 +20,8 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             _fileSystemMeta = fileSystemMeta;
             _volumeReader = volumeReader;
         }
+        
+        private int IndirectBlockCapacity => _fileSystemMeta.BlockSize / sizeof(int);
 
         public async Task<Memory<byte>> Read(FileMetaBlock fileMetaBlock, int offsetInBytes, int lengthInBytes)
         {
@@ -51,14 +54,13 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
         private async Task ReadIndirectBlocks(
             byte[] buffer, int bufferOffset, FileMetaBlock fileMetaBlock, int startBlockNumberInFileForIndirectBlocks, int blocksCountForReading)
         {
-            var dataBlocksCountPerIndirectBlock = _fileSystemMeta.BlockSize / sizeof(int);
-            var startIndirectBlocksIndex = startBlockNumberInFileForIndirectBlocks.DivideWithUpRounding(dataBlocksCountPerIndirectBlock);
-            var indirectBlocksCount = blocksCountForReading.DivideWithUpRounding(dataBlocksCountPerIndirectBlock);
+            var startIndirectBlocksIndex = startBlockNumberInFileForIndirectBlocks.DivideWithUpRounding(IndirectBlockCapacity);
+            var indirectBlocksCount = blocksCountForReading.DivideWithUpRounding(IndirectBlockCapacity);
 
             // read indirect blocks
             var indirectBlocksData = new byte[indirectBlocksCount * _fileSystemMeta.BlockSize];
             await ReadByChunks(indirectBlocksData, 0, fileMetaBlock.IndirectBlocks, startIndirectBlocksIndex, indirectBlocksCount);
-            var dataBlocksNumbers = indirectBlocksData.ToIntArray();
+            var dataBlocksNumbers = indirectBlocksData.ToIntArray().Where(bn => bn != 0).ToArray();
 
             // read data blocks by numbers from indirect blocks
             await ReadByChunks(buffer, bufferOffset, dataBlocksNumbers, 0, dataBlocksNumbers.Length);
@@ -93,10 +95,19 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
                     continue;
                 }
 
-                var length = blocksCountInChunk * _fileSystemMeta.BlockSize;
-                var memory = new Memory<byte>(buffer, bufferOffset, length);
+                var bytesInChunk = blocksCountInChunk * _fileSystemMeta.BlockSize;
 
-                await _volumeReader.ReadBlocksToBuffer(memory, startBlockNumberInChunk);
+                try
+                {
+                    var memory = new Memory<byte>(buffer, bufferOffset, bytesInChunk);
+                    await _volumeReader.ReadBlocksToBuffer(memory, startBlockNumberInChunk);
+                }
+                catch (Exception e)
+                {
+                    var _ = 0;
+                }
+                
+                bufferOffset += bytesInChunk;
 
                 if (i >= blocksCount)
                 {
@@ -105,7 +116,6 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
                 
                 startBlockNumberInChunk = blocksNumbers[i];
                 blocksCountInChunk = 1;
-                bufferOffset += length + 1;
             }
 
             return bufferOffset;

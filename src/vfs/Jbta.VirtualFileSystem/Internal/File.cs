@@ -10,22 +10,22 @@ namespace Jbta.VirtualFileSystem.Internal
 {
     internal class File : IFile
     {
-        private readonly FileSystemMeta _fileSystemMeta;
         private readonly FileReader _reader;
         private readonly FileWriter _writer;
+        private readonly FileSizeMeter _sizeMeter;
         private readonly FileMetaBlock _fileMetaBlock;
         private readonly ReaderWriterLockSlim _locker;
 
         public File(
-            FileSystemMeta fileSystemMeta,
             FileReader reader,
             FileWriter writer,
+            FileSizeMeter sizeMeter,
             FileMetaBlock fileMetaBlock,
             string name)
         {
-            _fileSystemMeta = fileSystemMeta;
             _reader = reader;
             _writer = writer;
+            _sizeMeter = sizeMeter;
             _fileMetaBlock = fileMetaBlock;
             Name = name;
             _locker = new ReaderWriterLockSlim();
@@ -33,7 +33,7 @@ namespace Jbta.VirtualFileSystem.Internal
 
         public string Name { get; }
 
-        public int Size
+        public Task<int> Size
         {
             get
             {
@@ -41,11 +41,11 @@ namespace Jbta.VirtualFileSystem.Internal
                 {
                     throw new FileSystemException("Cannot get size info from closed file");
                 }
-                
-                var fileMetaBlockSize = _fileSystemMeta.BlockSize;
-                var indirectBlockCapacity = _fileSystemMeta.BlockSize / sizeof(int);
-                var dataBlocksCount = _fileMetaBlock.DirectBlocksCount + _fileMetaBlock.IndirectBlocksCount * indirectBlockCapacity;
-                return dataBlocksCount * _fileSystemMeta.BlockSize + fileMetaBlockSize;
+
+                using (_locker.ReaderLock())
+                {
+                    return _sizeMeter.MeasureSize(_fileMetaBlock);
+                }
             }
         }
 

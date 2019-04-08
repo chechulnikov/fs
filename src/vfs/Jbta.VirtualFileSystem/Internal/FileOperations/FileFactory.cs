@@ -4,18 +4,21 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
 {
     internal class FileFactory
     {
-        private readonly FileSystemMeta _fileSystemMeta;
         private readonly FileReader _fileReader;
         private readonly FileWriter _writer;
+        private readonly FileSizeMeter _sizeMeter;
 
-        public FileFactory(FileSystemMeta fileSystemMeta, FileReader fileReader, FileWriter writer)
+        public FileFactory(
+            FileReader fileReader,
+            FileWriter writer,
+            FileSizeMeter sizeMeter)
         {
-            _fileSystemMeta = fileSystemMeta;
             _fileReader = fileReader;
             _writer = writer;
+            _sizeMeter = sizeMeter;
         }
         
         public IFile New(FileMetaBlock fileMetaBlock, string name) =>
-            new File(_fileSystemMeta, _fileReader, _writer, fileMetaBlock, name);
+            new File(_fileReader, _writer, _sizeMeter, fileMetaBlock, name);
     }
 }

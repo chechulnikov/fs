@@ -14,23 +14,25 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
     {
         private readonly FileSystemMeta _fileSystemMeta;
         private readonly BlocksAllocator _blocksAllocator;
-        private readonly IBinarySerializer<FileMetaBlock> _fileMetaBlockSeralizer;
+        private readonly IBinarySerializer<FileMetaBlock> _fileMetaBlockSerializer;
         private readonly IVolumeReader _volumeReader;
         private readonly IVolumeWriter _volumeWriter;
 
         public FileWriter(
             FileSystemMeta fileSystemMeta,
             BlocksAllocator blocksAllocator,
-            IBinarySerializer<FileMetaBlock> fileMetaBlockSeralizer,
+            IBinarySerializer<FileMetaBlock> fileMetaBlockSerializer,
             IVolumeReader volumeReader,
             IVolumeWriter volumeWriter)
         {
             _fileSystemMeta = fileSystemMeta;
             _blocksAllocator = blocksAllocator;
-            _fileMetaBlockSeralizer = fileMetaBlockSeralizer;
+            _fileMetaBlockSerializer = fileMetaBlockSerializer;
             _volumeReader = volumeReader;
             _volumeWriter = volumeWriter;
         }
+
+        private int IndirectBlockCapacity => _fileSystemMeta.BlockSize / sizeof(int);
 
         public async Task Write(FileMetaBlock fileMetaBlock, int offsetInBytes, byte[] data)
         {
@@ -78,10 +80,7 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             if (addingBlocksCount > 0)
             {
                 // 2.0. write data blocks
-                if (blocksData.Length % _fileSystemMeta.BlockSize != 0)
-                {
-                    Array.Resize(ref blocksData, _fileSystemMeta.BlockSize * addingBlocksCount);
-                }
+                blocksData = AdjustDataToBlockSize(blocksData, addingBlocksCount);
 
                 var reservedBlocksNumbers = await _blocksAllocator.AllocateBlocks(addingBlocksCount);
                 await _volumeWriter.WriteBlocks(blocksData, reservedBlocksNumbers);
@@ -102,11 +101,13 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
                 var blocksNumbersForIndirectPlacement = reservedBlocksNumbers.Skip(freeDirectBlocksCount).ToArray();
                 if (blocksNumbersForIndirectPlacement.Any())
                 {
-                    var reservedIndirectBlocksNumbers = await _blocksAllocator
-                        .AllocateBytes(blocksNumbersForIndirectPlacement.Length / sizeof(int));
+                    var countOfIndirectBlocks = blocksNumbersForIndirectPlacement.Length.DivideWithUpRounding(IndirectBlockCapacity);
+                    var reservedIndirectBlocksNumbers = await _blocksAllocator.AllocateBytes(countOfIndirectBlocks);
 
-                    var newIndirectBlocks = blocksNumbersForIndirectPlacement.ToByteArray();
-                    await _volumeWriter.WriteBlocks(newIndirectBlocks, reservedIndirectBlocksNumbers);
+                    var newIndirectBlocksData = AdjustDataToBlockSize(
+                        blocksNumbersForIndirectPlacement.ToByteArray(), countOfIndirectBlocks);
+                    
+                    await _volumeWriter.WriteBlocks(newIndirectBlocksData, reservedIndirectBlocksNumbers);
                     
                     foreach (var dataBlockNumber in reservedIndirectBlocksNumbers)
                     {
@@ -118,6 +119,16 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             
             // update file meta block
             await SaveFileMetaBlock(fileMetaBlock);
+        }
+
+        private byte[] AdjustDataToBlockSize(byte[] data, int countOfBlocks)
+        {
+            if (data.Length % _fileSystemMeta.BlockSize != 0)
+            {
+                Array.Resize(ref data, _fileSystemMeta.BlockSize * countOfBlocks);
+            }
+
+            return data;
         }
 
         private int BytesToBlockNumber(int bytesCount)
@@ -145,7 +156,6 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             var remaining = t % dataBlocksPerIndirectBlock;
             var indirectBlockIndex = remaining == 0 ? div : div + 1;
 
-            // todo without reading from volume: needs cache direct and indirect blocks
             var indirectBlock = await _volumeReader.ReadBlocks(fileMetaBlock.IndirectBlocks[indirectBlockIndex], 1);
 
             return BitConverter.ToInt32(indirectBlock, t - dataBlocksPerIndirectBlock * (indirectBlockIndex - 1));
@@ -153,7 +163,7 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
 
         private async Task SaveFileMetaBlock(FileMetaBlock fileMetaBlock)
         {
-            var fileMetaBlockData = _fileMetaBlockSeralizer.Serialize(fileMetaBlock);
+            var fileMetaBlockData = _fileMetaBlockSerializer.Serialize(fileMetaBlock);
             await _volumeWriter.WriteBlock(fileMetaBlockData, fileMetaBlock.BlockNumber);
         }
     }
