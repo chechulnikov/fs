@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 using Jbta.VirtualFileSystem.Internal.FileOperations;
 using Jbta.VirtualFileSystem.Internal.Utils;

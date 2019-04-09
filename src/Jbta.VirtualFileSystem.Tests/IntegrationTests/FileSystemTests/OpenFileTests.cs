@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal;
 using Xunit;
 

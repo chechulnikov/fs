@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.SpaceManagement

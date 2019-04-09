@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Jbta.VirtualFileSystem.Exceptions;
 using Jbta.VirtualFileSystem.Internal.FileOperations;
 using Jbta.VirtualFileSystem.Internal.Mounting;
 using Jbta.VirtualFileSystem.Internal.Utils;

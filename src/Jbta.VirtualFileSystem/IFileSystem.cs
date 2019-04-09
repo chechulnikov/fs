@@ -38,8 +38,8 @@ namespace Jbta.VirtualFileSystem
         /// </summary>
         /// <param name="fileName">A unique name of the file in file system</param>
         /// <exception cref="ArgumentException">Invalid file name</exception>
-        /// <exception cref="Jbta.VirtualFileSystem.Exceptions.FileSystemException">File system isn't mounted</exception>
-        /// <exception cref="Jbta.VirtualFileSystem.Exceptions.FileSystemException">File has already existed</exception>
+        /// <exception cref="FileSystemException">File system isn't mounted</exception>
+        /// <exception cref="FileSystemException">File has already existed</exception>
         Task CreateFile(string fileName);
 
         /// <summary>
