@@ -1,3 +1,5 @@
+[![Build Status](https://img.shields.io/travis/chechulnikov/fs.svg?branch=master)](https://travis-ci.com/chechulnikov/fs)
+
 # Файловая система
 Библиотека, реализующая файловую систему внутри файла-носителя.<br/>
 Функционал решения:
