@@ -1,6 +1,7 @@
 language: csharp
 mono: none
-dotnet: 2.2.105
+sudo: required
+dist: xenial
 script:
  - cd ./src
  - dotnet restore
