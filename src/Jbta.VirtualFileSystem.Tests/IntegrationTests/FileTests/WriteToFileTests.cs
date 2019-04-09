@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Exceptions;
@@ -168,11 +167,15 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             return Assert.ThrowsAsync<FileSystemException>(() => _file.Write(0, bytes));
         }
         
-        [Fact]
-        public async Task Write_AppendingInFile_ExpectedContent()
+        [Theory]
+        [InlineData(42, 2 * GlobalConstant.DefaultBlockSize)]
+        [InlineData(1024, 3 * GlobalConstant.DefaultBlockSize)]
+        [InlineData(1500, 4 * GlobalConstant.DefaultBlockSize)]
+        [InlineData(GlobalConstant.DefaultBlockSize * 16 + 2, (16 * 2 + 2) * GlobalConstant.DefaultBlockSize)]
+        [InlineData(GlobalConstant.DefaultBlockSize * 24 + 2, (24 * 2 + 2) * GlobalConstant.DefaultBlockSize)]
+        public async Task Write_AppendingInFile_ExpectedContent(int length, int expectedSize)
         {
             // arrange
-            const int length = 4242;
             var originalContent1 = RandomString.Generate(length);
             var originalContent2 = RandomString.Generate(length);
             var bytes1 = Encoding.ASCII.GetBytes(originalContent1);
@@ -187,7 +190,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             Assert.NotNull(data);
             Assert.Equal(2 * length, data.Length);
             Assert.Equal(originalContent1 + originalContent2, Encoding.ASCII.GetString(data));
-            Assert.Equal(2 * length * GlobalConstant.DefaultBlockSize, await _file.Size);
+            Assert.Equal(expectedSize, await _file.Size);
         }
     }
 }

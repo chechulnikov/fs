@@ -24,7 +24,7 @@ namespace Jbta.VirtualFileSystem.Internal
             var bPlusNodesFactory = new BPlusTreeNodesPersistenceManager(allocator, deallocator, indexBlockSerializer, volume, volume);
             var index = new FileSystemIndex(bPlusNodesFactory, rootIndexBlock, superblock.RootIndexBlockNumber);
             var fileReader = new FileReader(fileSystemMeta, volume);
-            var fileWriter = new FileWriter(fileSystemMeta, allocator, fileMetaBlockSerializer, volume, volume);
+            var fileWriter = new FileWriter(fileSystemMeta, allocator, deallocator, fileMetaBlockSerializer, volume, volume);
             var fileSizeMeter = new FileSizeMeter(fileSystemMeta, volume);
             var fileFactory = new FileFactory(fileReader, fileWriter, fileSizeMeter);
             var fileCreator = new FileCreator(index, fileMetaBlockSerializer, allocator, volume);
