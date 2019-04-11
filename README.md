@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/chechulnikov/fs.svg?branch=master)](https://travis-ci.org/chechulnikov/fs)
 # Файловая система
 Библиотека, реализующая файловую систему внутри файла-носителя.<br/>
 Функционал решения:
