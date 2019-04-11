@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemManagerTests
 {
-    public class UnmountTests : BaseTests
+    public class UnmountTests : TestsWithInitBase
     {
         [Theory]
         [InlineData(null)]
@@ -20,7 +20,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemManagerTests
         public async Task Unmount_MultithreadedEnv_UnmountedOnlyOnce()
         {
             // arrange
-            FileSystemManager.Mount(VolumePath);
+            await FileSystemManager.Mount(VolumePath);
             
             // act
             var tasks = Enumerable.Range(0, 10)

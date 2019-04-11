@@ -7,27 +7,16 @@ using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
 {
-    public class WriteToFileTests : BaseTests
+    public class WriteToFileTests : TestsWithFileBase
     {
-        private const string FileName = "foobar";
-        private readonly IFileSystem _fileSystem;
-        private readonly IFile _file;
-
-        public WriteToFileTests()
-        {
-            _fileSystem = FileSystemManager.Mount(VolumePath);
-            _fileSystem.CreateFile(FileName).Wait();
-            _file = _fileSystem.OpenFile(FileName).Result;
-        }
-        
         [Fact]
         public Task Write_ClosedFile_FileSystemException()
         {
             // arrange
-            _fileSystem.CloseFile(_file);
+            FileSystem.CloseFile(File);
             
             // act, assert
-            return Assert.ThrowsAsync<FileSystemException>(() => _file.Write(0, null));
+            return Assert.ThrowsAsync<FileSystemException>(() => File.Write(0, null));
         }
         
         [Theory]
@@ -36,21 +25,21 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
         public Task Write_InvalidOffset_ArgumentOutOfRangeException(int offset)
         {
             // act, assert
-            return Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => _file.Write(offset, null));
+            return Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => File.Write(offset, null));
         }
         
         [Fact]
         public Task Write_InvalidData_ArgumentException()
         {
             // act, assert
-            return Assert.ThrowsAsync<ArgumentException>(() => _file.Write(0, null));
+            return Assert.ThrowsAsync<ArgumentException>(() => File.Write(0, null));
         }
         
         [Fact]
         public Task Write_EmptyData_ArgumentException()
         {
             // act, assert
-            return Assert.ThrowsAsync<ArgumentException>(() => _file.Write(0, new byte[]{}));
+            return Assert.ThrowsAsync<ArgumentException>(() => File.Write(0, new byte[]{}));
         }
 
         [Fact]
@@ -60,15 +49,15 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             const string originalContent = "some content";
             
             // act
-            await _file.Write(0, Encoding.ASCII.GetBytes(originalContent));
+            await File.Write(0, Encoding.ASCII.GetBytes(originalContent));
             
             // assert
-            var data = (await _file.Read(0, originalContent.Length)).ToArray();
+            var data = (await File.Read(0, originalContent.Length)).ToArray();
             Assert.NotNull(data);
             Assert.Equal(originalContent.Length, data.Length);
             var content = Encoding.ASCII.GetString(data);
             Assert.Equal(originalContent, content);
-            Assert.Equal(2 * GlobalConstant.DefaultBlockSize, await _file.Size);
+            Assert.Equal(2 * GlobalConstant.DefaultBlockSize, await File.Size);
         }
         
         [Fact]
@@ -79,14 +68,14 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             var bytes = Encoding.ASCII.GetBytes(originalContent);
             
             // act
-            await _file.Write(0, bytes);
+            await File.Write(0, bytes);
             
             // assert
-            var data = (await _file.Read(0, originalContent.Length)).ToArray();
+            var data = (await File.Read(0, originalContent.Length)).ToArray();
             Assert.NotNull(data);
             Assert.Equal(originalContent.Length, data.Length);
             Assert.Equal(originalContent, Encoding.ASCII.GetString(data));
-            Assert.Equal(2 * GlobalConstant.DefaultBlockSize, await _file.Size);
+            Assert.Equal(2 * GlobalConstant.DefaultBlockSize, await File.Size);
         }
         
         [Fact]
@@ -99,14 +88,14 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             var bytes = Encoding.ASCII.GetBytes(originalContent);
             
             // act
-            await _file.Write(0, bytes);
+            await File.Write(0, bytes);
             
             // assert
-            var data = (await _file.Read(0, originalContent.Length)).ToArray();
+            var data = (await File.Read(0, originalContent.Length)).ToArray();
             Assert.NotNull(data);
             Assert.Equal(originalContent.Length, data.Length);
             Assert.Equal(originalContent, Encoding.ASCII.GetString(data));
-            Assert.Equal(size + GlobalConstant.DefaultBlockSize, await _file.Size);
+            Assert.Equal(size + GlobalConstant.DefaultBlockSize, await File.Size);
         }
         
         [Fact]
@@ -119,14 +108,14 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             var bytes = Encoding.ASCII.GetBytes(originalContent);
             
             // act
-            await _file.Write(0, bytes);
+            await File.Write(0, bytes);
             
             // assert
-            var data = (await _file.Read(0, originalContent.Length)).ToArray();
+            var data = (await File.Read(0, originalContent.Length)).ToArray();
             Assert.NotNull(data);
             Assert.Equal(originalContent.Length, data.Length);
             Assert.Equal(originalContent, Encoding.ASCII.GetString(data));
-            Assert.Equal(size + GlobalConstant.DefaultBlockSize, await _file.Size);
+            Assert.Equal(size + GlobalConstant.DefaultBlockSize, await File.Size);
         }
         
         [Fact]
@@ -141,14 +130,14 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             var bytes = Encoding.ASCII.GetBytes(originalContent);
             
             // act
-            await _file.Write(0, bytes);
+            await File.Write(0, bytes);
             
             // assert
-            var data = (await _file.Read(0, originalContent.Length)).ToArray();
+            var data = (await File.Read(0, originalContent.Length)).ToArray();
             Assert.NotNull(data);
             Assert.Equal(originalContent.Length, data.Length);
             Assert.Equal(originalContent, Encoding.ASCII.GetString(data));
-            Assert.Equal(size + GlobalConstant.DefaultBlockSize, await _file.Size);
+            Assert.Equal(size + GlobalConstant.DefaultBlockSize, await File.Size);
         }
         
         [Fact]
@@ -163,7 +152,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             var bytes = Encoding.ASCII.GetBytes(originalContent);
             
             // act, assert
-            return Assert.ThrowsAsync<FileSystemException>(() => _file.Write(0, bytes));
+            return Assert.ThrowsAsync<FileSystemException>(() => File.Write(0, bytes));
         }
         
         [Theory]
@@ -179,17 +168,17 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             var originalContent2 = RandomString.Generate(length);
             var bytes1 = Encoding.ASCII.GetBytes(originalContent1);
             var bytes2 = Encoding.ASCII.GetBytes(originalContent2);
-            await _file.Write(0, bytes1);
+            await File.Write(0, bytes1);
             
             // act
-            await _file.Write(length, bytes2);
+            await File.Write(length, bytes2);
             
             // assert
-            var data = (await _file.Read(0, 2 * length)).ToArray();
+            var data = (await File.Read(0, 2 * length)).ToArray();
             Assert.NotNull(data);
             Assert.Equal(2 * length, data.Length);
             Assert.Equal(originalContent1 + originalContent2, Encoding.ASCII.GetString(data));
-            Assert.Equal(expectedSize, await _file.Size);
+            Assert.Equal(expectedSize, await File.Size);
         }
     }
 }

@@ -5,15 +5,8 @@ using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
 {
-    public class OpenFileTests : BaseTests
+    public class OpenFileTests : TestsWithMountBase
     {
-        private readonly IFileSystem _fileSystem;
-        
-        public OpenFileTests()
-        {
-            _fileSystem = FileSystemManager.Mount(VolumePath);
-        }
-
         [Fact]
         public Task OpenFile_UnmountedFileSystem_FileSystemException()
         {
@@ -21,7 +14,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
             FileSystemManager.Unmount(VolumePath);
             
             // act, assert
-            return Assert.ThrowsAsync<FileSystemException>(() => _fileSystem.OpenFile("foo"));
+            return Assert.ThrowsAsync<FileSystemException>(() => FileSystem.OpenFile("foo"));
         }
 
         [Theory]
@@ -31,7 +24,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         public Task OpenFile_InvalidFileName_ArgumentException(string fileName)
         {
             // act, assert
-            return Assert.ThrowsAsync<ArgumentException>(() => _fileSystem.OpenFile(fileName));
+            return Assert.ThrowsAsync<ArgumentException>(() => FileSystem.OpenFile(fileName));
         }
         
         [Theory]
@@ -40,7 +33,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         public Task OpenFile_TooLargeFileName_ArgumentException(string fileName)
         {
             // act, assert
-            return Assert.ThrowsAsync<ArgumentException>(() => _fileSystem.CreateFile(fileName));
+            return Assert.ThrowsAsync<ArgumentException>(() => FileSystem.CreateFile(fileName));
         }
 
         [Fact]
@@ -48,10 +41,10 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         {
             // arrange
             const string fileName = "foobar";
-            await _fileSystem.CreateFile(fileName);
+            await FileSystem.CreateFile(fileName);
             
             // act
-            var file = await _fileSystem.OpenFile(fileName);
+            var file = await FileSystem.OpenFile(fileName);
             
             // assert
             Assert.NotNull(file);
@@ -64,11 +57,11 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         {
             // arrange
             const string fileName = "foobar";
-            await _fileSystem.CreateFile(fileName);
-            var file1 = await _fileSystem.OpenFile(fileName);
+            await FileSystem.CreateFile(fileName);
+            var file1 = await FileSystem.OpenFile(fileName);
             
             // act
-            var file2 = await _fileSystem.OpenFile(fileName);
+            var file2 = await FileSystem.OpenFile(fileName);
             
             // assert
             Assert.Same(file1, file2);
@@ -79,12 +72,12 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         {
             // arrange
             const string fileName = "foobar";
-            await _fileSystem.CreateFile(fileName);
-            var file1 = await _fileSystem.OpenFile(fileName);
-            _fileSystem.CloseFile(file1);
+            await FileSystem.CreateFile(fileName);
+            var file1 = await FileSystem.OpenFile(fileName);
+            FileSystem.CloseFile(file1);
             
             // act
-            var file2 = await _fileSystem.OpenFile(fileName);
+            var file2 = await FileSystem.OpenFile(fileName);
             
             // assert
             Assert.NotSame(file1, file2);

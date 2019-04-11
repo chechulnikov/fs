@@ -6,24 +6,24 @@ using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemManagerTests
 {
-    public class MountTests : BaseTests
+    public class MountTests : TestsWithInitBase
     {
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("      ")]
         [InlineData("foobar")]
-        public void Mount_VolumePathIsInvalid_ArgumentException(string volumePath)
+        public Task Mount_VolumePathIsInvalid_ArgumentException(string volumePath)
         {
             // act, assert
-            Assert.Throws<ArgumentException>(() => FileSystemManager.Mount(volumePath));
+            return Assert.ThrowsAsync<ArgumentException>(() => FileSystemManager.Mount(volumePath));
         }
         
         [Fact]
-        public void Mount_HappyPath_ValidFileSystem()
+        public async Task Mount_HappyPath_ValidFileSystem()
         {
             // act
-            var fileSystem = FileSystemManager.Mount(VolumePath);
+            var fileSystem = await FileSystemManager.Mount(VolumePath);
 
             // assert
             Assert.NotNull(fileSystem);
@@ -35,13 +35,13 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemManagerTests
         }
 
         [Fact]
-        public void Mount_FileSystemHasAlreadyMounted_SameObject()
+        public async Task Mount_FileSystemHasAlreadyMounted_SameObject()
         {
             // arrange
-            var first = FileSystemManager.Mount(VolumePath);
+            var first = await FileSystemManager.Mount(VolumePath);
 
             // act
-            var second = FileSystemManager.Mount(VolumePath);
+            var second = await FileSystemManager.Mount(VolumePath);
 
             // assert
             Assert.Same(first, second);
@@ -53,9 +53,9 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemManagerTests
             // act
             var fileSystems = new List<IFileSystem>();
             var tasks = Enumerable.Range(0, 10)
-                .Select(_ => Task.Run(() =>
+                .Select(_ => Task.Run(async () =>
                 {
-                    var fileSystem = FileSystemManager.Mount(VolumePath);
+                    var fileSystem = await FileSystemManager.Mount(VolumePath);
                     fileSystems.Add(fileSystem);
                 }))
                 .ToList();

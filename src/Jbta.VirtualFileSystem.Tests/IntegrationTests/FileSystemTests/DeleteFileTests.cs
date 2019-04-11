@@ -1,21 +1,13 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
-using Jbta.VirtualFileSystem.Internal;
 using Jbta.VirtualFileSystem.Internal.Utils;
 using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
 {
-    public class DeleteFileTests : BaseTests
+    public class DeleteFileTests : TestsWithMountBase
     {
-        private readonly IFileSystem _fileSystem;
-        
-        public DeleteFileTests()
-        {
-            _fileSystem = FileSystemManager.Mount(VolumePath);
-        }
-        
         [Fact]
         public Task DeleteFile_UnmountedFileSystem_FileSystemException()
         {
@@ -23,7 +15,7 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
             FileSystemManager.Unmount(VolumePath);
             
             // act, assert
-            return Assert.ThrowsAsync<FileSystemException>(() => _fileSystem.DeleteFile("foo"));
+            return Assert.ThrowsAsync<FileSystemException>(() => FileSystem.DeleteFile("foo"));
         }
         
         [Theory]
@@ -35,14 +27,14 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         public Task DeleteFile_InvalidFileName_ArgumentException(string fileName)
         {
             // act, assert
-            return Assert.ThrowsAsync<ArgumentException>(() => _fileSystem.DeleteFile(fileName));
+            return Assert.ThrowsAsync<ArgumentException>(() => FileSystem.DeleteFile(fileName));
         }
         
         [Fact]
         public Task DeleteFile_NonExistingFIle_False()
         {
             // act, assert
-            return Assert.ThrowsAsync<FileSystemException>(() => _fileSystem.DeleteFile("foobar"));
+            return Assert.ThrowsAsync<FileSystemException>(() => FileSystem.DeleteFile("foobar"));
         }
         
         [Fact]
@@ -50,14 +42,14 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         {
             // arrange
             const string fileName = "foobar";
-            await _fileSystem.CreateFile(fileName);
+            await FileSystem.CreateFile(fileName);
             
             // act
-            var result = await _fileSystem.DeleteFile(fileName);
+            var result = await FileSystem.DeleteFile(fileName);
             
             // assert
             Assert.True(result);
-            await Assert.ThrowsAsync<FileSystemException>(() => _fileSystem.OpenFile(fileName));
+            await Assert.ThrowsAsync<FileSystemException>(() => FileSystem.OpenFile(fileName));
         }
         
         [Fact]
@@ -65,17 +57,17 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         {
             // arrange
             const string fileName = "foobar";
-            await _fileSystem.CreateFile(fileName);
-            var file = await _fileSystem.OpenFile(fileName);
+            await FileSystem.CreateFile(fileName);
+            var file = await FileSystem.OpenFile(fileName);
             await file.Write(0, Encoding.ASCII.GetBytes(RandomString.Generate(424242)));
-            _fileSystem.CloseFile(file);
+            FileSystem.CloseFile(file);
             
             // act
-            var result = await _fileSystem.DeleteFile(fileName);
+            var result = await FileSystem.DeleteFile(fileName);
             
             // assert
             Assert.True(result);
-            await Assert.ThrowsAsync<FileSystemException>(() => _fileSystem.OpenFile(fileName));
+            await Assert.ThrowsAsync<FileSystemException>(() => FileSystem.OpenFile(fileName));
         }
         
         [Fact]
@@ -83,11 +75,11 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         {
             // arrange
             const string fileName = "foobar";
-            await _fileSystem.CreateFile(fileName);
-            await _fileSystem.OpenFile(fileName);
+            await FileSystem.CreateFile(fileName);
+            await FileSystem.OpenFile(fileName);
             
             // act
-            var result = await _fileSystem.DeleteFile(fileName);
+            var result = await FileSystem.DeleteFile(fileName);
             
             // assert
             Assert.False(result);
@@ -98,16 +90,16 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         {
             // arrange
             const string fileName = "foobar";
-            await _fileSystem.CreateFile(fileName);
-            var file = await _fileSystem.OpenFile(fileName);
-            _fileSystem.CloseFile(file);
+            await FileSystem.CreateFile(fileName);
+            var file = await FileSystem.OpenFile(fileName);
+            FileSystem.CloseFile(file);
             
             // act
-            var result = await _fileSystem.DeleteFile(fileName);
+            var result = await FileSystem.DeleteFile(fileName);
             
             // assert
             Assert.True(result);
-            await Assert.ThrowsAsync<FileSystemException>(() => _fileSystem.OpenFile(fileName));
+            await Assert.ThrowsAsync<FileSystemException>(() => FileSystem.OpenFile(fileName));
         }
     }
 }

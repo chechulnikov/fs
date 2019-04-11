@@ -1,4 +1,4 @@
 #!/bin/bash
-cd ./src
-dotnet restore
-dotnet test
+docker rmi -f fs-tests
+docker build -t fs-tests -f ./build/tests.dockerfile .
+docker run --rm --name fs-tests fs-tests

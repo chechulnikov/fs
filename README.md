@@ -81,7 +81,11 @@ NuGet пакеты:
 * [Nito.AsyncEx](https://www.nuget.org/packages/Nito.AsyncEx) – набор асинхронных примитивов; используется только `AsyncReaderWriterLock` в качестве async/await tolerant альтернативы `ReaderWriterLockSlim`;
 * [xUnit](https://www.nuget.org/packages/xunit/) — фреймворк для написания тестов.
 
-Писалось, собиралось и тестировалось в JetBrains Rider 2018.3.4 на macOS Mojave 10.14.4.
+Писалось, собиралось и тестировалось в JetBrains Rider 2018.3.4 на macOS Mojave 10.14.4. Тесты можно быстро проверить в Docker выполнив команду
+```
+chmod +x ./tests.sh
+./tests.sh
+```
 
 ### API
 Для управления файловыми системами предоставлены статические методы класса `FileSystemManager`.
@@ -101,12 +105,12 @@ await FileSystemManager.Init("./foo.dat");
 
 ##### Монтирование новой файловой системы
 ``` C#
-static IFileSystem Mount(string volumePath)
+static Task<IFileSystem> Mount(string volumePath)
 ```
 
 ###### Пример
 ``` C#
-var fileSystem = FileSystemManager.Mount("./foo.dat");
+var fileSystem = await FileSystemManager.Mount("./foo.dat");
 ```
 Сначала читается и валидируется заголовок файла `foo.dat`. Затем, если всё ОК, вычитываются superblock, bitmap-блоки и корневой индексный блок. В superblock ставится флаг `IsDirty` в положение `true`. Далее, над bitmap'ом в памяти строится дерево поиска, создаётся объект `fileSystem` типа `IFileSystem` и сохраняется во внутренний список примонтированных файловых систем.
 

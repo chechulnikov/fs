@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Internal;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks.Serialization;
 using Jbta.VirtualFileSystem.Internal.Initialization;
 using Jbta.VirtualFileSystem.Internal.Mounting;
+using Nito.AsyncEx;
 
 namespace Jbta.VirtualFileSystem
 {
@@ -14,7 +14,7 @@ namespace Jbta.VirtualFileSystem
     /// </summary>
     public class FileSystemManager
     {
-        private static readonly object Locker;
+        private static readonly AsyncReaderWriterLock Locker;
         private static volatile FileSystemManager _instance;
         private readonly Dictionary<string, IFileSystem> _mountedFileSystems;
         private readonly Mounter _mounter;
@@ -22,7 +22,7 @@ namespace Jbta.VirtualFileSystem
         
         static FileSystemManager()
         {
-            Locker = new SemaphoreSlim(0, 1);
+            Locker = new AsyncReaderWriterLock();
             
             if (_instance != null) return;
             lock (Locker)
@@ -67,7 +67,7 @@ namespace Jbta.VirtualFileSystem
         /// <param name="volumePath">Path to file with valid volume</param>
         /// <returns>An object, that represents a file system</returns>
         /// <exception cref="ArgumentException">File path should be valid</exception>
-        public static IFileSystem Mount(string volumePath)
+        public static async Task<IFileSystem> Mount(string volumePath)
         {
             volumePath = volumePath?.Trim();
             if (!System.IO.File.Exists(volumePath))
@@ -76,16 +76,16 @@ namespace Jbta.VirtualFileSystem
             if (_instance._mountedFileSystems.ContainsKey(volumePath))
                 return _instance._mountedFileSystems[volumePath];
 
-            lock (Locker)
+            using (await Locker.WriterLockAsync())
             {
                 if (_instance._mountedFileSystems.ContainsKey(volumePath))
                 {
                     return _instance._mountedFileSystems[volumePath];
                 }
-    
-                var fileSystem = _instance._mounter.Mount(volumePath).Result;
+
+                var fileSystem = await _instance._mounter.Mount(volumePath);
                 _instance._mountedFileSystems.Add(volumePath, fileSystem);
-    
+
                 return fileSystem;
             }
         }
@@ -103,7 +103,7 @@ namespace Jbta.VirtualFileSystem
             
             if (!_instance._mountedFileSystems.ContainsKey(volumePath)) return;
 
-            lock (Locker)
+            using (Locker.WriterLock())
             {
                 if (!_instance._mountedFileSystems.ContainsKey(volumePath)) return;
                 if (_instance._mountedFileSystems.Remove(volumePath, out var fs)) fs.Dispose();

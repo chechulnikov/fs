@@ -36,7 +36,7 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         public async ValueTask<int> SetFirstUnsetBit()
         {
             int firstUnsetBit;
-            using (_locker.WriterLock())
+            using (await _locker.WriterLockAsync())
             {
                 firstUnsetBit = _bitmapTree.GetFirstUnsetBit();
                 
@@ -58,7 +58,7 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         /// <returns>True, if bit was successfully set</returns>
         public async Task<bool> TrySetBit(int bitNumber)
         {
-            using (_locker.WriterLock())
+            using (await _locker.WriterLockAsync())
             {
                 if (_bitmapTree[bitNumber]) return false;
                 
@@ -75,7 +75,7 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         /// <returns>True, if bit was successfully unset</returns>
         public async Task<bool> TryUnsetBit(int bitNumber)
         {
-            using (_locker.WriterLock())
+            using (await _locker.WriterLockAsync())
             {
                 if (!_bitmapTree[bitNumber]) return false;
                 
@@ -90,7 +90,7 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         /// </summary>
         public async ValueTask UnsetBits(IReadOnlyList<int> bitNumbers)
         {
-            using (_locker.WriterLock())
+            using (await _locker.WriterLockAsync())
             {
                 _bitmapTree.UnsetBits(bitNumbers);
                 await SaveBitmapModifications(bitNumbers);

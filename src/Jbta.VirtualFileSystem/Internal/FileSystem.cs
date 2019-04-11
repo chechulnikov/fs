@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Internal.FileOperations;
 using Jbta.VirtualFileSystem.Internal.Mounting;
-using Jbta.VirtualFileSystem.Internal.Utils;
+using Nito.AsyncEx;
 
 namespace Jbta.VirtualFileSystem.Internal
 {
@@ -16,7 +15,7 @@ namespace Jbta.VirtualFileSystem.Internal
         private readonly FileRemover _fileRemover;
         private readonly Unmounter _unmounter;
         private readonly Dictionary<string, IFile> _openedFiles;
-        private readonly ReaderWriterLockSlim _locker;
+        private readonly AsyncReaderWriterLock _locker;
         
         public FileSystem(
             string volumePath,
@@ -33,7 +32,7 @@ namespace Jbta.VirtualFileSystem.Internal
             _fileRemover = fileRemover;
             _unmounter = unmounter;
             _openedFiles = new Dictionary<string, IFile>();
-            _locker = new ReaderWriterLockSlim();
+            _locker = new AsyncReaderWriterLock();
             IsMounted = true;
         }
         
@@ -59,17 +58,14 @@ namespace Jbta.VirtualFileSystem.Internal
             CheckFileSystemState();
             fileName = CheckAndPrepareFileName(fileName);
             
-            using (_locker.ReaderLock())
+            using (_locker.WriterLock())
             {
                 if (_openedFiles.ContainsKey(fileName))
                 {
                     return false;
                 }
-            }
             
-            await _fileRemover.Remove(fileName);
-            using (_locker.WriterLock())
-            {
+                await _fileRemover.Remove(fileName);
                 _openedFiles.Remove(fileName);
             }
 
@@ -81,38 +77,51 @@ namespace Jbta.VirtualFileSystem.Internal
             CheckFileSystemState();
             fileName = CheckAndPrepareFileName(fileName);
 
-            using (_locker.ReaderLock())
+            using (await _locker.ReaderLockAsync())
             {
                 if (_openedFiles.TryGetValue(fileName, out var alreadyOpenedFile))
                 {
                     return alreadyOpenedFile;
                 }
             }
-
-            var file = await _fileOpener.Open(fileName);
-            using (_locker.WriterLock())
+            
+            using (await _locker.WriterLockAsync())
             {
-                _openedFiles.Add(fileName, file);
-            }
+                if (_openedFiles.TryGetValue(fileName, out var alreadyOpenedFile))
+                {
+                    return alreadyOpenedFile;
+                }
                 
-            return file;
+                var file = await _fileOpener.Open(fileName);
+                _openedFiles.Add(fileName, file);
+                
+                return file;
+            }
         }
 
         public bool CloseFile(IFile file)
         {
             CheckFileSystemState();
             if (file == null) throw new ArgumentNullException(nameof(file));
-
-            using (_locker.UpgradableReaderLock())
+            
+            using (_locker.ReaderLock())
             {
-                if (!_openedFiles.ContainsKey(file.Name)) return false;
-
-                using (_locker.WriterLock())
+                if (!_openedFiles.ContainsKey(file.Name))
                 {
-                    _openedFiles.Remove(file.Name);
-                    file.Dispose();
-                    return true;
+                    return false;
                 }
+            }
+
+            using (_locker.WriterLock())
+            {
+                if (!_openedFiles.ContainsKey(file.Name))
+                {
+                    return false;
+                }
+                
+                _openedFiles.Remove(file.Name);
+                file.Dispose();
+                return true;
             }
         }
 
@@ -139,7 +148,7 @@ namespace Jbta.VirtualFileSystem.Internal
 
         public void Dispose()
         {
-            _unmounter.Unmount().Wait();
+            Task.Run(() => _unmounter.Unmount()).Wait();
             IsMounted = false;
         }
     }

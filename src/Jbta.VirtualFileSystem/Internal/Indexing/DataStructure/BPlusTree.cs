@@ -49,7 +49,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Value cannot be null or empty.", nameof(key));
             if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value));
             
-            using (_locker.WriterLock())
+            using (await _locker.WriterLockAsync())
             {
                 var leaf = FindLeaf(key);
                 if (leaf.Keys.Contains(key))
@@ -87,7 +87,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(key));
             
-            using (_locker.WriterLock())
+            using (await _locker.WriterLockAsync())
             {
                 var leaf = FindLeaf(key);
                 if (!leaf.Keys.Contains(key))

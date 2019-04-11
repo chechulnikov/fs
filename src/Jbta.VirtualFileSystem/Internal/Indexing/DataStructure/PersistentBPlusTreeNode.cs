@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Internal.DataAccess.Blocks;
 
 namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
@@ -62,7 +63,7 @@ namespace Jbta.VirtualFileSystem.Internal.Indexing.DataStructure
         }
 
         private IBPlusTreeNode LoadNode(int blockNumber) =>
-            blockNumber == 0 ? null : _nodesPersistenceManager.LoadNode(blockNumber).Result;
+            blockNumber == 0 ? null : Task.Run(async () => await _nodesPersistenceManager.LoadNode(blockNumber)).Result;
 
         private IBPlusTreeNode[] LoadChildren()
         {

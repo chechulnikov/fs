@@ -1,19 +1,11 @@
 using System;
 using System.Threading.Tasks;
-using Jbta.VirtualFileSystem.Internal;
 using Xunit;
 
 namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
 {
-    public class CloseFileTests : BaseTests
+    public class CloseFileTests : TestsWithMountBase
     {
-        private readonly IFileSystem _fileSystem;
-        
-        public CloseFileTests()
-        {
-            _fileSystem = FileSystemManager.Mount(VolumePath);
-        }
-
         [Fact]
         public void CloseFile_UnmountedFileSystem_FileSystemException()
         {
@@ -21,14 +13,14 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
             FileSystemManager.Unmount(VolumePath);
             
             // act, assert
-            Assert.Throws<FileSystemException>(() => _fileSystem.CloseFile(null));
+            Assert.Throws<FileSystemException>(() => FileSystem.CloseFile(null));
         }
         
         [Fact]
         public void CloseFile_FileIsNull_ArgumentNullException()
         {
             // act, assert
-            Assert.Throws<ArgumentNullException>(() => _fileSystem.CloseFile(null));
+            Assert.Throws<ArgumentNullException>(() => FileSystem.CloseFile(null));
         }
 
         [Fact]
@@ -36,11 +28,11 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         {
             // arrange
             const string fileName = "foobar";
-            await _fileSystem.CreateFile(fileName);
-            var file = await _fileSystem.OpenFile(fileName);
+            await FileSystem.CreateFile(fileName);
+            var file = await FileSystem.OpenFile(fileName);
             
             // act
-            var result = _fileSystem.CloseFile(file);
+            var result = FileSystem.CloseFile(file);
             
             // assert
             Assert.True(result);
@@ -52,12 +44,12 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileSystemTests
         {
             // arrange
             const string fileName = "foobar";
-            await _fileSystem.CreateFile(fileName);
-            var file = await _fileSystem.OpenFile(fileName);
-            _fileSystem.CloseFile(file);
+            await FileSystem.CreateFile(fileName);
+            var file = await FileSystem.OpenFile(fileName);
+            FileSystem.CloseFile(file);
             
             // act
-            var result = _fileSystem.CloseFile(file);
+            var result = FileSystem.CloseFile(file);
             
             // assert
             Assert.False(result);
