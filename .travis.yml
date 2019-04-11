@@ -7,4 +7,4 @@ script:
  - cd ./src	
  - dotnet restore	
  - dotnet build	
- - dotnet test
+ - dotnet test --verbosity d
