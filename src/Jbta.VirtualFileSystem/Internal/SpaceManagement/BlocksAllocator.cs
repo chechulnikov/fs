@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Jbta.VirtualFileSystem.Internal.Utils;
 
 namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
 {
@@ -9,30 +8,22 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
     /// </summary>
     internal class BlocksAllocator
     {
-        private readonly FileSystemMeta _fileSystemMeta;
         private readonly Bitmap _bitmap;
 
-        public BlocksAllocator(FileSystemMeta fileSystemMeta, Bitmap bitmap)
+        public BlocksAllocator(Bitmap bitmap)
         {
-            _fileSystemMeta = fileSystemMeta;
             _bitmap = bitmap;
-        }
-
-        /// <summary>
-        /// Allocates bytes in blocks by given bytes count
-        /// </summary>
-        /// <param name="bytesCount">Count of bytes, that should be allocated</param>
-        /// <returns>Allocated blocks numbers</returns>
-        public ValueTask<IReadOnlyList<int>> AllocateBytes(int bytesCount)
-        {
-            var blocksCount = bytesCount.DivideWithUpRounding(_fileSystemMeta.BlockSize);
-            return AllocateBlocks(blocksCount);
         }
 
         /// <summary>
         /// Allocates one blocks of bytes
         /// </summary>
-        public ValueTask<int> AllocateBlock() => _bitmap.SetFirstUnsetBit();
+        public async ValueTask<int> AllocateBlock()
+        {
+            var blockNumber = _bitmap.SetFirstUnsetBit();
+            await _bitmap.SaveBitmapModifications(new []{blockNumber});
+            return blockNumber;
+        }
 
         /// <summary>
         /// Allocates blocks of bytes by given blocks count
@@ -43,12 +34,14 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         {
             var blocksNumbers = new int[blocksCount];
 
-            blocksNumbers[0] = await _bitmap.SetFirstUnsetBit();
+            blocksNumbers[0] = _bitmap.SetFirstUnsetBit();
             for (var i = 1; i < blocksCount; i++)
             {
                 var blockNumber = blocksNumbers[i - 1] + 1;
-                blocksNumbers[i] = await _bitmap.TrySetBit(blockNumber) ? blockNumber : await _bitmap.SetFirstUnsetBit();
+                blocksNumbers[i] = _bitmap.TrySetBit(blockNumber) ? blockNumber : _bitmap.SetFirstUnsetBit();
             }
+
+            await _bitmap.SaveBitmapModifications(blocksNumbers);
 
             return blocksNumbers;
         }

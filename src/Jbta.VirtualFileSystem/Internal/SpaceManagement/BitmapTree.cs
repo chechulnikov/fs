@@ -8,9 +8,10 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
     /// <summary>
     /// This is a tree that provides first unset bit search search for O(log n)
     /// Example:
-    ///    0       0
-    ///  1   0   0   0
-    /// 1 1 1 0 1 0 0 1
+    ///        0               0
+    ///    0       0       1       0
+    ///  1   0   0   0   1   1   0   0
+    /// 1 1 1 0 1 0 0 1 1 1 1 1 1 0 0 0
     /// </summary>
     internal class BitmapTree
     {
@@ -34,21 +35,10 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             
             // count set bits
             for (var i = 0; i < _dataLength; i++)
-                if (this[i]) SetBitsCount++;
+                if (this[i]) MarkedBitsCount++;
         }
 
-        public int SetBitsCount { get; private set; }
-
-        public int SetBitsCount2
-        {
-            get
-            {
-                var res = 0;
-                for (var i = 0; i < _dataLength; i++)
-                    if (this[i]) res++;
-                return res;
-            }
-        }
+        public int MarkedBitsCount { get; private set; }
 
         public bool TrySetBit(int bitNumber)
         {
@@ -72,7 +62,25 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             }
         }
 
-        public byte[] GetBitmapBlocksSnapshotsByNumbers(IEnumerable<int> bitNumbers)
+        public int GetFirstUnsetBit()
+        {
+            var position = 1;
+            while (position < _dataLength)
+            {
+                position *= 2;
+
+                var left = _tree[position];
+                var right = _tree[position + 1];
+
+                if (!left) continue;
+                if (right) throw new FileSystemException("Invalid bitmap tree state");
+
+                position += 1;
+            }
+            return position - _dataLength;
+        }
+
+        public byte[] GetPartialBitmapSnapshot(IEnumerable<int> bitNumbers)
         {
             var bitsInBlock = _blockSize * 8;
             var booleansBuffer = new bool[8];
@@ -129,38 +137,19 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             }
         }
 
-        public int GetFirstUnsetBit()
-        {
-            var position = 1;
-            while (position < _dataLength)
-            {
-                position *= 2;
-
-                var left = _tree[position];
-                var right = _tree[position + 1];
-
-                if (!left) continue;
-                if (right) throw new FileSystemException("Invalid bitmap tree state");
-
-                position += 1;
-            }
-                
-            return position - _dataLength;
-        }
-
         // boolean min
         private static bool TreeOperation(bool first, bool second) => first && second;
 
         private void SetBit(int bitNumber)
         {
             this[bitNumber] = true;
-            SetBitsCount++;
+            MarkedBitsCount++;
         }
 
         private void UnsetBit(int bitNumber)
         {
             this[bitNumber] = false;
-            SetBitsCount--;
+            MarkedBitsCount--;
         }
     }
 }

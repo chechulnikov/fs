@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Internal.DataAccess;
+using Jbta.VirtualFileSystem.Internal.Utils;
 using Nito.AsyncEx;
 
 namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
@@ -9,22 +11,22 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
     {
         private readonly BitmapTree _bitmapTree;
         private readonly IVolumeWriter _volumeWriter;
-        private readonly AsyncReaderWriterLock _locker;
+        private readonly ReaderWriterLockSlim _locker;
 
         public Bitmap(BitmapTree bitmapTree, IVolumeWriter volumeWriter)
         {
             _bitmapTree = bitmapTree;
             _volumeWriter = volumeWriter;
-            _locker = new AsyncReaderWriterLock();
+            _locker = new ReaderWriterLockSlim();
         }
 
-        public int SetBitsCount
+        public int MarkedBitsCount
         {
             get
             {
                 using (_locker.ReaderLock())
                 {
-                    return _bitmapTree.SetBitsCount;
+                    return _bitmapTree.MarkedBitsCount;
                 }
             }
         }
@@ -33,21 +35,18 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         /// Finds first unset bit and set it
         /// </summary>
         /// <returns>First unset bit number</returns>
-        public async ValueTask<int> SetFirstUnsetBit()
+        public int SetFirstUnsetBit()
         {
             int firstUnsetBit;
-            using (await _locker.WriterLockAsync())
+            using (_locker.UpgradableReaderLock())
             {
                 firstUnsetBit = _bitmapTree.GetFirstUnsetBit();
-                
-                if (_bitmapTree[firstUnsetBit])
+                using (_locker.WriterLock())
                 {
-                    firstUnsetBit = _bitmapTree.GetFirstUnsetBit();
+                    _bitmapTree[firstUnsetBit] = true;
                 }
-                
-                _bitmapTree[firstUnsetBit] = true;
-                await SaveBitmapModifications(new[] {firstUnsetBit});
             }
+
             return firstUnsetBit;
         }
 
@@ -56,15 +55,15 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         /// </summary>
         /// <param name="bitNumber">Number of bit</param>
         /// <returns>True, if bit was successfully set</returns>
-        public async Task<bool> TrySetBit(int bitNumber)
+        public bool TrySetBit(int bitNumber)
         {
-            using (await _locker.WriterLockAsync())
+            using (_locker.UpgradableReaderLock())
             {
                 if (_bitmapTree[bitNumber]) return false;
-                
-                if (!_bitmapTree.TrySetBit(bitNumber)) return false;
-                await SaveBitmapModifications(new[] {bitNumber});
-                return true;
+                using (_locker.WriterLock())
+                {
+                    return _bitmapTree.TrySetBit(bitNumber);
+                }
             }
         }
         
@@ -73,34 +72,39 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
         /// </summary>
         /// <param name="bitNumber">Number of bit</param>
         /// <returns>True, if bit was successfully unset</returns>
-        public async Task<bool> TryUnsetBit(int bitNumber)
+        public bool TryUnsetBit(int bitNumber)
         {
-            using (await _locker.WriterLockAsync())
+            using (_locker.UpgradableReaderLock())
             {
                 if (!_bitmapTree[bitNumber]) return false;
-                
-                if (!_bitmapTree.TryUnsetBit(bitNumber)) return false;
-                await SaveBitmapModifications(new[] {bitNumber});
-                return true;
+                using (_locker.WriterLock())
+                {
+                    return _bitmapTree.TryUnsetBit(bitNumber);
+                }
             }
         }
 
         /// <summary>
         /// Unset given bits
         /// </summary>
-        public async ValueTask UnsetBits(IReadOnlyList<int> bitNumbers)
+        public void UnsetBits(IEnumerable<int> bitNumbers)
         {
-            using (await _locker.WriterLockAsync())
+            using (_locker.WriterLock())
             {
                 _bitmapTree.UnsetBits(bitNumbers);
-                await SaveBitmapModifications(bitNumbers);
             }
         }
 
-        private async Task SaveBitmapModifications(IReadOnlyList<int> bitNumbers)
+        public async Task SaveBitmapModifications(IReadOnlyList<int> bitNumbers)
         {
-            var modifiedBitmapBlocksSnapshot = _bitmapTree.GetBitmapBlocksSnapshotsByNumbers(bitNumbers);
+            byte[] modifiedBitmapBlocksSnapshot;
+            using (_locker.ReaderLock())
+            {
+                modifiedBitmapBlocksSnapshot = _bitmapTree.GetPartialBitmapSnapshot(bitNumbers);
+            }
+
             await _volumeWriter.WriteBlocks(modifiedBitmapBlocksSnapshot, bitNumbers);
+            
         }
     }
 }

@@ -77,7 +77,8 @@ namespace Jbta.VirtualFileSystem.Internal.FileOperations
             await _blocksDeallocator.DeallocateBlocks(outdatedBlockNumbers);
         }
 
-        private async Task<IReadOnlyList<int>> ReplaceBlocks(FileMetaBlock fileMetaBlock, byte[] blocksData, int addingBlocksCount, int startBlockNumberInFile)
+        private async Task<IReadOnlyList<int>> ReplaceBlocks(
+            FileMetaBlock fileMetaBlock, byte[] blocksData, int addingBlocksCount, int startBlockNumberInFile)
         {
             var outdatedBlockNumbers = await CollectOutdatedBlocks(startBlockNumberInFile, fileMetaBlock);
             

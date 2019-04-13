@@ -16,7 +16,7 @@ namespace Jbta.VirtualFileSystem.Internal
             var bitmapTree = new BitmapTree(superblock.BlockSize, bitmapBlocks);
             var bitmap = new Bitmap(bitmapTree, volume);
             var fileSystemMeta = new FileSystemMeta(superblock.BlockSize, bitmap);
-            var allocator = new BlocksAllocator(fileSystemMeta, bitmap);
+            var allocator = new BlocksAllocator(bitmap);
             var deallocator = new BlocksDeallocator(bitmap);
             var superblockSerializer = new SuperblockSerializer(fileSystemMeta.BlockSize);
             var indexBlockSerializer = new IndexBlockSerializer(fileSystemMeta.BlockSize);

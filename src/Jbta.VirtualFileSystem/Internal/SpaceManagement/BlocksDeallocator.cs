@@ -18,16 +18,29 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             _bitmap = bitmap;
         }
         
-        public Task DeallocateBlock(int blockNumber) => _bitmap.TryUnsetBit(blockNumber);
+        public async Task DeallocateBlock(int blockNumber)
+        {
+            if (_bitmap.TryUnsetBit(blockNumber))
+            {
+                await _bitmap.SaveBitmapModifications(new []{blockNumber});
+            }
+        }
 
         public async Task DeallocateBlocks(IReadOnlyList<int> blocksNumbers)
         {
             var batchesCount = blocksNumbers.Count.DivideWithUpRounding(BatchSize);
+            if (batchesCount == 0)
+            {
+                return;
+            }
+            
             foreach (var batchNumber in Enumerable.Range(0, batchesCount))
             {
                 var batchOfBlocksNumbers = blocksNumbers.Skip(batchNumber * BatchSize).Take(BatchSize).ToArray();
-                await _bitmap.UnsetBits(batchOfBlocksNumbers);
+                _bitmap.UnsetBits(batchOfBlocksNumbers);
             }
+            
+            await _bitmap.SaveBitmapModifications(blocksNumbers);
         }
     }
 }
