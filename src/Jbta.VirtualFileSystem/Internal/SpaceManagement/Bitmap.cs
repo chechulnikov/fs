@@ -104,7 +104,6 @@ namespace Jbta.VirtualFileSystem.Internal.SpaceManagement
             }
 
             await _volumeWriter.WriteBlocks(modifiedBitmapBlocksSnapshot, bitNumbers);
-            
         }
     }
 }

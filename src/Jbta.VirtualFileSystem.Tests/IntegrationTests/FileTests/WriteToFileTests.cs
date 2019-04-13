@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Jbta.VirtualFileSystem.Internal;
@@ -179,6 +181,41 @@ namespace Jbta.VirtualFileSystem.Tests.IntegrationTests.FileTests
             Assert.Equal(2 * length, data.Length);
             Assert.Equal(originalContent1 + originalContent2, Encoding.ASCII.GetString(data));
             Assert.Equal(expectedSize, await File.Size);
+        }
+        
+        [Fact]
+        public async Task Write_SeveralFilesSimultaneously_ExpectedContent()
+        {
+            // arrange
+            const int dataBlocksCount = GlobalConstant.MaxFileDirectBlocksCount + 42;
+            const int size = GlobalConstant.DefaultBlockSize * dataBlocksCount;
+            var originalContent = RandomString.Generate(size);
+            var bytes = Encoding.ASCII.GetBytes(originalContent);
+            var fileNames = new List<string>();
+            
+            // act
+            await Task.WhenAll(
+                Enumerable.Range(0, 20)
+                    .Select(_ => Task.Run(async () =>
+                    {
+                        var fileName = RandomString.Generate(16);
+                        fileNames.Add(fileName);
+                        await FileSystem.CreateFile(fileName);
+                        var file = await FileSystem.OpenFile(fileName);
+                        await file.Write(0, bytes);
+                    }))
+                    .ToList()
+            );
+            
+            // assert
+            var readContents = new List<string>();
+            foreach (var fileName in fileNames)
+            {
+                var file = await FileSystem.OpenFile(fileName);
+                var readContent = await file.Read(0, size);
+                readContents.Add(Encoding.ASCII.GetString(readContent.ToArray()));
+            }
+            Assert.All(readContents, c => Assert.Equal(originalContent, c));
         }
     }
 }
